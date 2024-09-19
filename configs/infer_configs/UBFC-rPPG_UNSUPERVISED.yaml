@@ -6,7 +6,7 @@ UNSUPERVISED:
   DATA:
     FS: 30
     DATASET: UBFC-rPPG
-    DO_PREPROCESS: False               # if first time, should be true
+    DO_PREPROCESS: true               # if first time, should be true
     DATA_FORMAT: NDHWC
     DATA_PATH: "/hpc/group/dunnlab/yj167/DATASET_2"                     # Raw dataset path, need to be updated
     CACHED_PATH: "/hpc/group/dunnlab/yj167/DATASET_2/DATASET_PRE"    # Processed dataset save path, need to be updated
