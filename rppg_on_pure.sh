@@ -7,7 +7,7 @@
 #SBATCH --time=800:00
 
 
-# SBATCH -p gpu-common --gres=gpu:1
+#SBATCH -p gpu-common --gres=gpu:1
 #SBATCH --exclusive
 start_time=$(date "+%Y-%m-%d %H:%M:%S")
 echo "Script started at: $start_time"
