@@ -489,7 +489,6 @@ class BaseLoader(Dataset):
 
         # in range of number of files to process
         for i in choose_range:
-            self.preprocess_dataset_subprocess()
             process_flag = True
             while process_flag:  # ensure that every i creates a process
                 if running_num < multi_process_quota:  # in case of too many processes
