@@ -68,6 +68,7 @@ class UBFCrPPGLoader(BaseLoader):
         """ invoked by preprocess_dataset for multi_process."""
         filename = os.path.split(data_dirs[i]['path'])[-1]
         saved_filename = data_dirs[i]['index']
+        print("UBFC-subprocess" + str(saved_filename))
 
         # Read Frames
         if 'None' in config_preprocess.DATA_AUG:
@@ -81,6 +82,7 @@ class UBFCrPPGLoader(BaseLoader):
         else:
             raise ValueError(f'Unsupported DATA_AUG specified for {self.dataset_name} dataset! Received {config_preprocess.DATA_AUG}.')
 
+        print("start reading labels")
         # Read Labels
         if config_preprocess.USE_PSUEDO_PPG_LABEL:
             bvps = self.generate_pos_psuedo_labels(frames, fs=self.config_data.FS)
