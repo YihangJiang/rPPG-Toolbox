@@ -489,28 +489,28 @@ class BaseLoader(Dataset):
 
         # in range of number of files to process
         for i in choose_range:
-            self.preprocess_dataset_subprocess()
-            process_flag = True
-            while process_flag:  # ensure that every i creates a process
-                if running_num < multi_process_quota:  # in case of too many processes
-                    # send data to be preprocessing task
-                    p = Process(target=self.preprocess_dataset_subprocess, 
-                                args=(data_dirs,config_preprocess, i, file_list_dict))
-                    p.start()
-                    p_list.append(p)
-                    running_num += 1
-                    process_flag = False
-                for p_ in p_list:
-                    if not p_.is_alive():
-                        p_list.remove(p_)
-                        p_.join()
-                        running_num -= 1
-                        pbar.update(1)
-        # join all processes
-        for p_ in p_list:
-            p_.join()
-            pbar.update(1)
-        pbar.close()
+            self.preprocess_dataset_subprocess(data_dirs,config_preprocess, i, file_list_dict)
+        #     process_flag = True
+        #     while process_flag:  # ensure that every i creates a process
+        #         if running_num < multi_process_quota:  # in case of too many processes
+        #             # send data to be preprocessing task
+        #             p = Process(target=self.preprocess_dataset_subprocess, 
+        #                         args=(data_dirs,config_preprocess, i, file_list_dict))
+        #             p.start()
+        #             p_list.append(p)
+        #             running_num += 1
+        #             process_flag = False
+        #         for p_ in p_list:
+        #             if not p_.is_alive():
+        #                 p_list.remove(p_)
+        #                 p_.join()
+        #                 running_num -= 1
+        #                 pbar.update(1)
+        # # join all processes
+        # for p_ in p_list:
+        #     p_.join()
+        #     pbar.update(1)
+        # pbar.close()
 
         return file_list_dict
 

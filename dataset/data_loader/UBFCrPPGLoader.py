@@ -91,6 +91,8 @@ class UBFCrPPGLoader(BaseLoader):
                 os.path.join(data_dirs[i]['path'],"ground_truth.txt"))
             
         frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess)
+        print(frames_clips.shape)
+        print(bvps_clips.shape)
         input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename)
         file_list_dict[i] = input_name_list
 
@@ -101,11 +103,15 @@ class UBFCrPPGLoader(BaseLoader):
         VidObj.set(cv2.CAP_PROP_POS_MSEC, 0)
         success, frame = VidObj.read()
         frames = list()
+        i= 0 
         while success:
+            # print(i)
+            i = i + 1
             frame = cv2.cvtColor(np.array(frame), cv2.COLOR_BGR2RGB)
             frame = np.asarray(frame)
             frames.append(frame)
             success, frame = VidObj.read()
+        # print("out read_video")
         return np.asarray(frames)
 
     @staticmethod
