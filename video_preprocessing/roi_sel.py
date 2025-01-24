@@ -72,7 +72,6 @@ for face_landmarks in results.multi_face_landmarks:
 resize_and_show(annotated_image)
 # %%
 # Get the contour of specific facial areas
-seq_num_list = get_seq_num_facial_areas(facial_areas, area_name)
 selected_facial_area = facial_areas['Right_eye']
 seq_num_list = np.array([])
 for i in selected_facial_area:
@@ -83,7 +82,7 @@ seq_num_list = np.unique(seq_num_list.astype(int))
 print(np.unique(seq_num_list))
 # %%
 # Get the corner of eyes
-pt_min, pt_max = locate_eye_corner(results, seq_num_list, img)
+pt_min, pt_max = locate_eye_corner(results, seq_num_list, annotated_image)
 
 # %%
 landmarks = results.multi_face_landmarks[0]
