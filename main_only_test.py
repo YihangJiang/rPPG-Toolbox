@@ -28,6 +28,8 @@ general_generator.manual_seed(RANDOM_SEED)
 train_generator = torch.Generator()
 train_generator.manual_seed(RANDOM_SEED)
 
+print("config set up finished")
+
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2 ** 32
@@ -127,6 +129,7 @@ def unsupervised_method_inference(config, data_loader):
 
 
 if __name__ == "__main__":
+    print("begin main.py")
     # parse arguments.
     parser = argparse.ArgumentParser()
     parser = add_args(parser)

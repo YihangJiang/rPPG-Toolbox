@@ -203,6 +203,7 @@ class BaseLoader(Dataset):
             begin(float): index of begining during train/val split.
             end(float): index of ending during train/val split.
         """
+        print("BaseLoader preprocess_dataset")
         data_dirs_split = self.split_raw_data(data_dirs, begin, end)  # partition dataset 
         # send data directories to be processed
         file_list_dict = self.multi_process_manager(data_dirs_split, config_preprocess) 
@@ -222,6 +223,7 @@ class BaseLoader(Dataset):
             bvps_clips(np.array): processed bvp (ppg) labels by frames
         """
         # resize frames and crop for face region
+        print("BaseLoader preprocess")
         frames = self.crop_face_resize(
             frames,
             config_preprocess.CROP_FACE.DO_CROP_FACE,

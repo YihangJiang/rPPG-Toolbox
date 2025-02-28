@@ -28,7 +28,7 @@ general_generator.manual_seed(RANDOM_SEED)
 train_generator = torch.Generator()
 train_generator.manual_seed(RANDOM_SEED)
 
-
+print("test")
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2 ** 32
     np.random.seed(worker_seed)
@@ -127,6 +127,7 @@ def unsupervised_method_inference(config, data_loader):
 
 
 if __name__ == "__main__":
+    print("run main")
     # parse arguments.
     parser = argparse.ArgumentParser()
     parser = add_args(parser)
@@ -224,6 +225,7 @@ if __name__ == "__main__":
 
     if config.TOOLBOX_MODE == "train_and_test" or config.TOOLBOX_MODE == "only_test":
         # test_loader
+        print("this is the test dataset path " + str(config.TEST.DATA.DATA_PATH))
         if config.TEST.DATA.DATASET == "UBFC-rPPG":
             test_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
         elif config.TEST.DATA.DATASET == "PURE":
@@ -250,6 +252,7 @@ if __name__ == "__main__":
         # Create and initialize the test dataloader given the correct toolbox mode,
         # a supported dataset name, and a valid dataset path
         if config.TEST.DATA.DATASET and config.TEST.DATA.DATA_PATH:
+            print("test dataset name :" + str(config.TEST.DATA.DATASET))
             test_data = test_loader(
                 name="test",
                 data_path=config.TEST.DATA.DATA_PATH,
