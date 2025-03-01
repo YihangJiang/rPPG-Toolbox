@@ -26,7 +26,7 @@ from retinaface import RetinaFace   # Source code: https://github.com/serengil/r
 from constant import *
 
 
-class BaseLoader(Dataset):
+class BaseSingleLoader(Dataset):
     """The base class for data loading based on pytorch Dataset.
 
     The dataloader supports both providing data for pytorch training and common data-preprocessing methods,
@@ -42,7 +42,7 @@ class BaseLoader(Dataset):
             "--preprocess", default=None, action='store_true')
         return parser
 
-    def __init__(self, dataset_name, raw_data_path, config_data):
+    def __init__(self, dataset_name, raw_data_path, config_data, subj_num):
         """Inits dataloader with lists of files.
 
         Args:
@@ -60,12 +60,13 @@ class BaseLoader(Dataset):
         self.data_format = config_data.DATA_FORMAT
         self.do_preprocess = config_data.DO_PREPROCESS
         self.config_data = config_data
+        self.subj_num = subj_num
 
         assert (config_data.BEGIN < config_data.END)
         assert (config_data.BEGIN > 0 or config_data.BEGIN == 0)
         assert (config_data.END < 1 or config_data.END == 1)
         if config_data.DO_PREPROCESS:
-            self.raw_data_dirs = self.get_raw_data(self.raw_data_path)
+            self.raw_data_dirs = self.get_raw_data(self.raw_data_path, self.subj_num)
             self.preprocess_dataset(self.raw_data_dirs, config_data.PREPROCESS, config_data.BEGIN, config_data.END)
         else:
             if not os.path.exists(self.cached_path):
@@ -243,18 +244,18 @@ class BaseLoader(Dataset):
             if data_type == "Raw":
                 data.append(f_c)
             elif data_type == "DiffNormalized":
-                data.append(BaseLoader.diff_normalize_data(f_c))
+                data.append(BaseSingleLoader.diff_normalize_data(f_c))
             elif data_type == "Standardized":
-                data.append(BaseLoader.standardized_data(f_c))
+                data.append(BaseSingleLoader.standardized_data(f_c))
             else:
                 raise ValueError("Unsupported data type!")
         data = np.concatenate(data, axis=-1)  # concatenate all channels
         if config_preprocess.LABEL_TYPE == "Raw":
             pass
         elif config_preprocess.LABEL_TYPE == "DiffNormalized":
-            bvps = BaseLoader.diff_normalize_label(bvps)
+            bvps = BaseSingleLoader.diff_normalize_label(bvps)
         elif config_preprocess.LABEL_TYPE == "Standardized":
-            bvps = BaseLoader.standardized_label(bvps)
+            bvps = BaseSingleLoader.standardized_label(bvps)
         else:
             raise ValueError("Unsupported label type!")
 

@@ -11,14 +11,14 @@ from multiprocessing import Pool, Process, Value, Array, Manager
 
 import cv2
 import numpy as np
-from dataset.data_loader.BaseLoader import BaseLoader
+from dataset.data_loader.BaseSingleLoader import BaseSingleLoader
 from tqdm import tqdm
 
 
-class UBFCrPPGLoader(BaseLoader):
+class UBFCrPPGSingleLoader(BaseSingleLoader):
     """The data loader for the UBFC-rPPG dataset."""
 
-    def __init__(self, name, data_path, config_data):
+    def __init__(self, name, data_path, config_data, subj_num):
         """Initializes an UBFC-rPPG dataloader.
             Args:
                 data_path(str): path of a folder which stores raw video and bvp data.
@@ -39,11 +39,11 @@ class UBFCrPPGLoader(BaseLoader):
                 name(string): name of the dataloader.
                 config_data(CfgNode): data settings(ref:config.py).
         """
-        super().__init__(name, data_path, config_data)
+        super().__init__(name, data_path, config_data, subj_num)
 
-    def get_raw_data(self, data_path):
+    def get_raw_data(self, data_path, i):
         """Returns data directories under the path(For UBFC-rPPG dataset)."""
-        data_dirs = glob.glob(data_path + os.sep + "subject*")
+        data_dirs = glob.glob(data_path + os.sep + "subject" + str(i))
         if not data_dirs:
             raise ValueError(self.dataset_name + " data paths empty!")
         dirs = [{"index": re.search(
