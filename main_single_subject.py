@@ -134,6 +134,7 @@ if __name__ == "__main__":
     parser = trainer.BaseTrainer.BaseTrainer.add_trainer_args(parser)
     parser = data_loader.BaseLoader.BaseLoader.add_data_loader_args(parser)
     args = parser.parse_args()
+    print(args)
 
     # configurations.
     config = get_config(args)
@@ -141,124 +142,16 @@ if __name__ == "__main__":
     print(config, end='\n\n')
 
     data_loader_dict = dict() # dictionary of data loaders 
-    if config.TOOLBOX_MODE == "train_and_test":
-        # train_loader
-        if config.TRAIN.DATA.DATASET == "UBFC-rPPG":
-            train_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
-        elif config.TRAIN.DATA.DATASET == "PURE":
-            train_loader = data_loader.PURELoader.PURELoader
-        elif config.TRAIN.DATA.DATASET == "SCAMPS":
-            train_loader = data_loader.SCAMPSLoader.SCAMPSLoader
-        elif config.TRAIN.DATA.DATASET == "MMPD":
-            train_loader = data_loader.MMPDLoader.MMPDLoader
-        elif config.TRAIN.DATA.DATASET == "BP4DPlus":
-            train_loader = data_loader.BP4DPlusLoader.BP4DPlusLoader
-        elif config.TRAIN.DATA.DATASET == "BP4DPlusBigSmall":
-            train_loader = data_loader.BP4DPlusBigSmallLoader.BP4DPlusBigSmallLoader
-        elif config.TRAIN.DATA.DATASET == "UBFC-PHYS":
-            train_loader = data_loader.UBFCPHYSLoader.UBFCPHYSLoader
-        elif config.TRAIN.DATA.DATASET == "iBVP":
-            train_loader = data_loader.iBVPLoader.iBVPLoader
-        else:
-            raise ValueError("Unsupported dataset! Currently supporting UBFC-rPPG, PURE, MMPD, \
-                             SCAMPS, BP4D+ (Normal and BigSmall preprocessing), UBFC-PHYS and iBVP.")
-
-        # Create and initialize the train dataloader given the correct toolbox mode,
-        # a supported dataset name, and a valid dataset paths
-        if (config.TRAIN.DATA.DATASET and config.TRAIN.DATA.DATA_PATH):
-
-            train_data_loader = train_loader(
-                name="train",
-                data_path=config.TRAIN.DATA.DATA_PATH,
-                config_data=config.TRAIN.DATA)
-            data_loader_dict['train'] = DataLoader(
-                dataset=train_data_loader,
-                num_workers=16,
-                batch_size=config.TRAIN.BATCH_SIZE,
-                shuffle=True,
-                worker_init_fn=seed_worker,
-                generator=train_generator
-            )
-        else:
-            data_loader_dict['train'] = None
-
-        # valid_loader
-        if config.VALID.DATA.DATASET == "UBFC-rPPG":
-            valid_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
-        elif config.VALID.DATA.DATASET == "PURE":
-            valid_loader = data_loader.PURELoader.PURELoader
-        elif config.VALID.DATA.DATASET == "SCAMPS":
-            valid_loader = data_loader.SCAMPSLoader.SCAMPSLoader
-        elif config.VALID.DATA.DATASET == "MMPD":
-            valid_loader = data_loader.MMPDLoader.MMPDLoader
-        elif config.VALID.DATA.DATASET == "BP4DPlus":
-            valid_loader = data_loader.BP4DPlusLoader.BP4DPlusLoader
-        elif config.VALID.DATA.DATASET == "BP4DPlusBigSmall":
-            valid_loader = data_loader.BP4DPlusBigSmallLoader.BP4DPlusBigSmallLoader
-        elif config.VALID.DATA.DATASET == "UBFC-PHYS":
-            valid_loader = data_loader.UBFCPHYSLoader.UBFCPHYSLoader
-        elif config.VALID.DATA.DATASET == "iBVP":
-            valid_loader = data_loader.iBVPLoader.iBVPLoader
-        elif config.VALID.DATA.DATASET is None and not config.TEST.USE_LAST_EPOCH:
-            raise ValueError("Validation dataset not specified despite USE_LAST_EPOCH set to False!")
-        else:
-            raise ValueError("Unsupported dataset! Currently supporting UBFC-rPPG, PURE, MMPD, \
-                             SCAMPS, BP4D+ (Normal and BigSmall preprocessing), UBFC-PHYS and iBVP")
-        
-        # Create and initialize the valid dataloader given the correct toolbox mode,
-        # a supported dataset name, and a valid dataset path
-        if (config.VALID.DATA.DATASET and config.VALID.DATA.DATA_PATH and not config.TEST.USE_LAST_EPOCH):
-            valid_data = valid_loader(
-                name="valid",
-                data_path=config.VALID.DATA.DATA_PATH,
-                config_data=config.VALID.DATA)
-            data_loader_dict["valid"] = DataLoader(
-                dataset=valid_data,
-                num_workers=16,
-                batch_size=config.TRAIN.BATCH_SIZE,  # batch size for val is the same as train
-                shuffle=False,
-                worker_init_fn=seed_worker,
-                generator=general_generator
-            )
-        else:
-            data_loader_dict['valid'] = None
-
-    if config.TOOLBOX_MODE == "train_and_test" or config.TOOLBOX_MODE == "only_test":
-        # test_loader
-        print("this is the test dataset path " + str(config.TEST.DATA.DATA_PATH))
-        if config.TEST.DATA.DATASET == "UBFC-rPPG":
-            test_loader = data_loader.UBFCrPPGSingleLoader.UBFCrPPGSingleLoader
-        elif config.TEST.DATA.DATASET == "PURE":
-            test_loader = data_loader.PURELoader.PURELoader
-        elif config.TEST.DATA.DATASET == "SCAMPS":
-            test_loader = data_loader.SCAMPSLoader.SCAMPSLoader
-        elif config.TEST.DATA.DATASET == "MMPD":
-            test_loader = data_loader.MMPDLoader.MMPDLoader
-        elif config.TEST.DATA.DATASET == "BP4DPlus":
-            test_loader = data_loader.BP4DPlusLoader.BP4DPlusLoader
-        elif config.TEST.DATA.DATASET == "BP4DPlusBigSmall":
-            test_loader = data_loader.BP4DPlusBigSmallLoader.BP4DPlusBigSmallLoader
-        elif config.TEST.DATA.DATASET == "UBFC-PHYS":
-            test_loader = data_loader.UBFCPHYSLoader.UBFCPHYSLoader
-        elif config.TEST.DATA.DATASET == "iBVP":
-            test_loader = data_loader.iBVPLoader.iBVPLoader
-        else:
-            raise ValueError("Unsupported dataset! Currently supporting UBFC-rPPG, PURE, MMPD, \
-                             SCAMPS, BP4D+ (Normal and BigSmall preprocessing), UBFC-PHYS and iBVP.")
-        
-        if config.TOOLBOX_MODE == "train_and_test" and config.TEST.USE_LAST_EPOCH:
-            print("Testing uses last epoch, validation dataset is not required.", end='\n\n')   
-
-        # Create and initialize the test dataloader given the correct toolbox mode,
-        # a supported dataset name, and a valid dataset path
-        if config.TEST.DATA.DATASET and config.TEST.DATA.DATA_PATH:
-            print("test dataset name :" + str(config.TEST.DATA.DATASET))
-            test_data = test_loader(
+    train_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
+    test_loader = data_loader.UBFCrPPGSingleLoader.UBFCrPPGSingleLoader
+    
+    print(config.TEST.DATA.DATA_PATH)
+    test_data = test_loader(
                 name="test",
                 data_path=config.TEST.DATA.DATA_PATH,
                 config_data=config.TEST.DATA,
                 subj_num=3)
-            data_loader_dict["test"] = DataLoader(
+    data_loader_dict["test"] = DataLoader(
                 dataset=test_data,
                 num_workers=16,
                 batch_size=config.INFERENCE.BATCH_SIZE,
@@ -266,50 +159,5 @@ if __name__ == "__main__":
                 worker_init_fn=seed_worker,
                 generator=general_generator
             )
-        else:
-            data_loader_dict['test'] = None
 
-    elif config.TOOLBOX_MODE == "unsupervised_method":
-        # unsupervised method dataloader
-        if config.UNSUPERVISED.DATA.DATASET == "UBFC-rPPG":
-            unsupervised_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
-        elif config.UNSUPERVISED.DATA.DATASET == "PURE":
-            unsupervised_loader = data_loader.PURELoader.PURELoader
-        elif config.UNSUPERVISED.DATA.DATASET == "SCAMPS":
-            unsupervised_loader = data_loader.SCAMPSLoader.SCAMPSLoader
-        elif config.UNSUPERVISED.DATA.DATASET == "MMPD":
-            unsupervised_loader = data_loader.MMPDLoader.MMPDLoader
-        elif config.UNSUPERVISED.DATA.DATASET == "BP4DPlus":
-            unsupervised_loader = data_loader.BP4DPlusLoader.BP4DPlusLoader
-        elif config.UNSUPERVISED.DATA.DATASET == "UBFC-PHYS":
-            unsupervised_loader = data_loader.UBFCPHYSLoader.UBFCPHYSLoader
-        elif config.UNSUPERVISED.DATA.DATASET == "iBVP":
-            unsupervised_loader = data_loader.iBVPLoader.iBVPLoader
-        else:
-            raise ValueError("Unsupported dataset! Currently supporting UBFC-rPPG, PURE, MMPD, \
-                             SCAMPS, BP4D+, UBFC-PHYS and iBVP.")
-        
-        unsupervised_data = unsupervised_loader(
-            name="unsupervised",
-            data_path=config.UNSUPERVISED.DATA.DATA_PATH,
-            config_data=config.UNSUPERVISED.DATA)
-        data_loader_dict["unsupervised"] = DataLoader(
-            dataset=unsupervised_data,
-            num_workers=16,
-            batch_size=1,
-            shuffle=False,
-            worker_init_fn=seed_worker,
-            generator=general_generator
-        )
-
-    else:
-        raise ValueError("Unsupported toolbox_mode! Currently support train_and_test or only_test or unsupervised_method.")
-
-    if config.TOOLBOX_MODE == "train_and_test":
-        train_and_test(config, data_loader_dict)
-    elif config.TOOLBOX_MODE == "only_test":
-        test(config, data_loader_dict)
-    elif config.TOOLBOX_MODE == "unsupervised_method":
-        unsupervised_method_inference(config, data_loader_dict)
-    else:
-        print("TOOLBOX_MODE only support train_and_test or only_test !", end='\n\n')
+    test(config, data_loader_dict)

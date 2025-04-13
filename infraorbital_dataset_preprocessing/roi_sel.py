@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 import os
 import mediapipe as mp
 from video_utils import *
+
+
+
 # %%
 
 vidcap = cv2.VideoCapture('./test.mov')
@@ -88,10 +91,16 @@ pt_min, pt_max = locate_eye_corner(results, seq_num_list, annotated_image)
 landmarks = results.multi_face_landmarks[0]
 for facial_area in facial_areas.keys():
     facial_area_obj = facial_areas[facial_area]
-    plot_landmark(annotated_image, facial_area, facial_area_obj, landmarks)
+    plot_landmark(annotated_image, facial_area, results, pt_min, pt_max, False)
     cv2.circle(annotated_image, pt_min, 10, (255, 0, 0), -1)
     cv2.circle(annotated_image, pt_max, 10, (255, 0, 0), -1)
 # %%
-plot_semi(annotated_image, pt_min, pt_max)
+masked_image, _ = plot_semi(annotated_image, pt_min, pt_max, False)
+plot_rois(results, image)
+
+
+# %%
+
+
 
 # %%

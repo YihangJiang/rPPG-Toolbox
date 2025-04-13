@@ -225,7 +225,6 @@ class BaseSingleLoader(Dataset):
             bvps_clips(np.array): processed bvp (ppg) labels by frames
         """
         # resize frames and crop for face region
-        print("BaseLoader preprocess")
         frames = self.crop_face_resize(
             frames,
             config_preprocess.CROP_FACE.DO_CROP_FACE,
