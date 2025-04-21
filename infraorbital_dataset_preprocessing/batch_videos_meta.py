@@ -38,8 +38,7 @@ for subject_folder in os.listdir(main_folder):
 
 
 # %% Use directory path to save the videos that only contain the infraorbital region
-for i in range(1):
-    i = 3 
+for i in range(len(video_path)):
     output_path = check_output_path(video_path_list[i])
     segmented_frames = segment_one_video(video_path_list[i], output_path, area_names)
 
