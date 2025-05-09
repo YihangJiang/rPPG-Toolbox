@@ -51,6 +51,7 @@ def calculate_metrics(predictions, labels, config):
     SNR_all = list()
     MACC_all = list()
     print("Calculating metrics!")
+    # predictions.keys() is the name of the video chunks
     for index in tqdm(predictions.keys(), ncols=80):
         prediction = _reform_data_from_dict(predictions[index])
         label = _reform_data_from_dict(labels[index])

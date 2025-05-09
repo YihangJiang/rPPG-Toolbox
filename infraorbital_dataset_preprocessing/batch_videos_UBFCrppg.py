@@ -23,6 +23,7 @@ video_path_list = []
 
 # Loop through each subject folder, save the directory path of each raw video
 for subject_folder in os.listdir(main_folder):
+    print(subject_folder)
     subject_path = os.path.join(main_folder, subject_folder)
     if os.path.isdir(subject_path) and subject_pattern.match(subject_folder):  # Check if it's a directory
         subject_path_list.append(subject_path)
@@ -39,7 +40,9 @@ for subject_folder in os.listdir(main_folder):
 
 # %% Use directory path to save the videos that only contain the infraorbital region
 for i in range(len(video_path)):
-    output_path = check_output_path(video_path_list[i])
+    output_path, exist = check_output_path(video_path_list[i])
+    if exist:
+        continue
     segmented_frames = segment_one_video(video_path_list[i], output_path, area_names)
 
 

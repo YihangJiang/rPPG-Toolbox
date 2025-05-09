@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import os
 import mediapipe as mp
 from video_utils import *
-
+area_names = ['Right_eye', 'Left_eye']
 
 
 # %%
@@ -100,6 +100,16 @@ plot_rois(results, image)
 
 
 # %%
+results = face_detection(image)
+annotated_image = image.copy()
+seq_num_list_1 = get_seq_num_facial_areas(facial_areas, area_names[0])
+seq_num_list_2 = get_seq_num_facial_areas(facial_areas, area_names[1])
+time4 = time.time()
+pt_min, pt_max = locate_eye_corner(results, seq_num_list_1, annotated_image)
+pt_min_2, pt_max_2 = locate_eye_corner(results, seq_num_list_2, annotated_image)
+time5 = time.time()
+# plot_landmark(annotated_image, area_name, results, pt_min, pt_max, True)
+masked_image, extracted_pixels = plot_semi(annotated_image, [pt_min, pt_min_2], [pt_max, pt_max_2], False)
 
 
 

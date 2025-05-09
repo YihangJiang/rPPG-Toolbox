@@ -16,6 +16,8 @@ from unsupervised_methods.methods import POS_WANG
 from unsupervised_methods import utils
 import math
 from multiprocessing import Pool, Process, Value, Array, Manager
+from scipy.signal import detrend
+from scipy.fftpack import fft
 
 import cv2
 import numpy as np
@@ -55,6 +57,7 @@ class BaseLoader(Dataset):
         self.dataset_name = dataset_name
         self.raw_data_path = raw_data_path
         self.cached_path = config_data.CACHED_PATH
+        self.eda_path = config_data.EDA_PATH
         self.file_list_path = config_data.FILE_LIST_PATH
         self.preprocessed_data_len = 0
         self.data_format = config_data.DATA_FORMAT
@@ -147,6 +150,32 @@ class BaseLoader(Dataset):
             raise Exception(f'Loaded frames are of an incorrect type or range of values! '\
             + f'Received frames of type {frames.dtype} and range {np.min(frames)} to {np.max(frames)}.')
         return np.asarray(processed_frames)
+    
+    def estimate_hr_fft(self, bvp_signal, fs):
+        """Estimates heart rate and returns spectrum for plotting."""
+        N = len(bvp_signal)
+        bvp_detrended = detrend(bvp_signal)
+        freqs = np.fft.fftfreq(N, d=1/fs)
+        fft_spectrum = np.abs(fft(bvp_detrended))**2
+
+        # Filter to positive frequencies
+        pos_mask = freqs > 0
+        freqs = freqs[pos_mask]
+        fft_spectrum = fft_spectrum[pos_mask]
+
+        # Limit to HR band
+        hr_mask = (freqs >= 0.7) & (freqs <= 3.0)
+        freqs_hr = freqs[hr_mask]
+        spectrum_hr = fft_spectrum[hr_mask]
+
+        if len(freqs_hr) == 0:
+            return None, None, None
+
+        peak_idx = np.argmax(spectrum_hr)
+        peak_freq = freqs_hr[peak_idx]
+        estimated_hr_bpm = peak_freq * 60
+
+        return estimated_hr_bpm, freqs_hr * 60, spectrum_hr  # HR in BPM
 
     def generate_pos_psuedo_labels(self, frames, fs=30):
         """Generated POS-based PPG Psuedo Labels For Training
@@ -224,7 +253,7 @@ class BaseLoader(Dataset):
             bvps_clips(np.array): processed bvp (ppg) labels by frames
         """
         # resize frames and crop for face region
-        print("BaseLoader preprocess")
+        print("BaseLoader preprocess " + str(self.raw_data_path))
         frames = self.crop_face_resize(
             frames,
             config_preprocess.CROP_FACE.DO_CROP_FACE,

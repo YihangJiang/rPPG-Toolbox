@@ -11,8 +11,9 @@ TRAIN:
     DATASET: UBFC-rPPG
     DO_PREPROCESS: true               # if first time, should be true
     DATA_FORMAT: NDCHW
-    DATA_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_2"                     # Raw dataset path, need to be updated
-    EDA_PATH: "/hpc/group/dunnlab/rppg_data/data/meta_d_2"    # Processed dataset save path, need to be updated
+    DATA_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_2_IN"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_PRE_IN"    # Processed dataset save path, need to be updated
+    EDA_PATH: "/hpc/group/dunnlab/rppg_data/data/meta_d_2"
     EXP_DATA_NAME: ""
     BEGIN: 0.0
     END: 0.8
@@ -23,7 +24,7 @@ TRAIN:
       DO_CHUNK: True
       CHUNK_LENGTH: 180
       CROP_FACE:
-        DO_CROP_FACE: True
+        DO_CROP_FACE: False 
         BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace
         USE_LARGE_FACE_BOX: True
         LARGE_BOX_COEF: 1.5
@@ -40,8 +41,9 @@ VALID:
     DATASET: UBFC-rPPG
     DO_PREPROCESS: true                  # if first time, should be true
     DATA_FORMAT: NDCHW
-    DATA_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_2"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_PRE"    # Processed dataset save path, need to be updated
+    DATA_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_2_IN"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_PRE_IN"    # Processed dataset save path, need to be updated
+    EDA_PATH: "/hpc/group/dunnlab/rppg_data/data/meta_d_2"
     EXP_DATA_NAME: ""
     BEGIN: 0.8
     END: 1.0
@@ -83,10 +85,11 @@ TEST:
       TASK_LIST: ['T1', 'T2', 'T3']
     FS: 35
     DATASET: UBFC-PHYS
-    DO_PREPROCESS: true                    # if first time, should be true
+    DO_PREPROCESS: True                    # if first time, should be true
     DATA_FORMAT: NDCHW
-    DATA_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_1"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_PRE"    # Processed dataset save path, need to be updated
+    DATA_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_1_IN"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_PRE_IN"    # Processed dataset save path, need to be updated
+    EDA_PATH: "/hpc/group/dunnlab/rppg_data/data/meta_d_1"
     EXP_DATA_NAME: ""
     BEGIN: 0.0
     END: 1.0
@@ -94,9 +97,9 @@ TEST:
       DATA_TYPE: [ 'DiffNormalized','Standardized' ]
       LABEL_TYPE: DiffNormalized
       DO_CHUNK: True
-      CHUNK_LENGTH: 180
+      CHUNK_LENGTH: 300
       CROP_FACE:
-        DO_CROP_FACE: True
+        DO_CROP_FACE: false
         BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace
         USE_LARGE_FACE_BOX: True
         LARGE_BOX_COEF: 1.5

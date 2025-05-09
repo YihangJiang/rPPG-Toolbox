@@ -96,12 +96,41 @@ class UBFCPHYSLoader(BaseLoader):
         if config_preprocess.USE_PSUEDO_PPG_LABEL:
             bvps = self.generate_pos_psuedo_labels(frames, fs=self.config_data.FS)
         else:
+            print("reading raw label from " + os.path.dirname(data_dirs[i]['path']),"bvp_{0}.csv".format(saved_filename))
             bvps = self.read_wave(
                 os.path.join(os.path.dirname(data_dirs[i]['path']),"bvp_{0}.csv".format(saved_filename)))
 
         bvps = BaseLoader.resample_ppg(bvps, frames.shape[0])
             
         frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess)
+
+        subject_number = saved_filename.split('_')[0]
+
+        # Prepare data for DataFrame
+        hr_data = []
+        
+        for i in range(bvps_clips.shape[0]):
+            hr_bpm, freqs_bpm, spectrum = self.estimate_hr_fft(bvps_clips[i], fs=self.config_data.FS)
+            print(f"Chunk {i}: HR = {hr_bpm:.2f} BPM")
+            hr_data.append({"chunk_number": i, "subject_number": subject_number, "heart_rate": hr_bpm})
+
+        hr_df = pd.DataFrame(hr_data)
+        csv_output_path = os.path.join(self.eda_path, f"{subject_number}_hr.csv")
+
+        # Check if file exists and write accordingly
+        if os.path.exists(csv_output_path):
+            # Append without writing the header
+            hr_df.to_csv(csv_output_path, mode='a', header=False, index=False)
+            print(f"Appended hr from chunked videos to {csv_output_path}")
+        else:
+            # Create new file with header
+            hr_df.to_csv(csv_output_path, mode='w', header=True, index=False)
+            print(f"Created new csv to keep hr from chunked videos: {csv_output_path}")
+
+        hr_df = hr_df.drop_duplicates(subset=["chunk_number", "subject_number"], keep='last')
+
+        print("raw frames / preprocessed frames: " + str(frames.shape) + "/" + str(frames_clips.shape))
+        print("raw labels / preprocessed labels: " + str(bvps.shape) + "/" + str(bvps_clips.shape))
         input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename)
         file_list_dict[i] = input_name_list
 
@@ -132,7 +161,7 @@ class UBFCPHYSLoader(BaseLoader):
             raise ValueError(self.dataset_name + ' dataset loading data error!')
         
         filtered_inputs = sorted(filtered_inputs)  # sort input file name list
-        labels = [input_file.replace("input", "label") for input_file in filtered_inputs]
+        labels= [input_file.replace("input", "label") for input_file in filtered_inputs]
         self.inputs = filtered_inputs
         self.labels = labels
         self.preprocessed_data_len = len(filtered_inputs)
@@ -140,6 +169,7 @@ class UBFCPHYSLoader(BaseLoader):
     @staticmethod
     def read_video(video_file):
         """Reads a video file, returns frames(T,H,W,3) """
+        print(video_file)
         VidObj = cv2.VideoCapture(video_file)
         VidObj.set(cv2.CAP_PROP_POS_MSEC, 0)
         success, frame = VidObj.read()

@@ -3,7 +3,7 @@
 import argparse
 import random
 import time
-
+import datetime
 import numpy as np
 import torch
 from config import get_config
@@ -28,7 +28,6 @@ general_generator.manual_seed(RANDOM_SEED)
 train_generator = torch.Generator()
 train_generator.manual_seed(RANDOM_SEED)
 
-print("test")
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2 ** 32
     np.random.seed(worker_seed)
@@ -127,7 +126,10 @@ def unsupervised_method_inference(config, data_loader):
 
 
 if __name__ == "__main__":
-    print("run main")
+    current_time = datetime.datetime.now()
+
+    # Print the current date and time in a specific format (YYYY-MM-DD HH:MM:SS)
+    print(f"Starting time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
     # parse arguments.
     parser = argparse.ArgumentParser()
     parser = add_args(parser)
@@ -312,3 +314,9 @@ if __name__ == "__main__":
         unsupervised_method_inference(config, data_loader_dict)
     else:
         print("TOOLBOX_MODE only support train_and_test or only_test !", end='\n\n')
+
+    current_time = datetime.datetime.now()
+
+    # Print the current date and time in a specific format (YYYY-MM-DD HH:MM:SS)
+    print(f"Ending time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+

@@ -6,6 +6,8 @@ import mediapipe as mp
 from tqdm import tqdm
 import re
 import os
+import time
+
 
 
 DESIRED_HEIGHT = 480
@@ -137,8 +139,31 @@ def plot_rois(results, image):
   else:
       print("No face detected. Please try a different image.")
 
+def fill_mask(mask, mid_x, mid_y, radius, m, b):
+    # Create a grid of coordinates (X, Y) for the entire mask
+    y_indices, x_indices = np.indices(mask.shape)
+
+    # Compute the distance from the center (mid_x, mid_y) for each pixel
+    distances = (x_indices - mid_x)**2 + (y_indices - mid_y)**2
+
+    # Create a boolean mask for the pixels inside the circle
+    inside_circle = distances <= radius**2
+
+    # Create a boolean mask for the lower semi-circle
+    lower_semi_circle = y_indices < m * x_indices + b
+
+    # Combine the two conditions: inside the circle and below the line
+    final_mask = np.logical_and(inside_circle, lower_semi_circle)
+
+    # Apply the mask to the original mask array
+    mask[final_mask] = 0
+
+    return mask
+
+
 def mod_mask(mask, pt_1, pt_2):
     # Define the two points (peaks) for the semi-circle
+    time1 = time.time()
     x1, y1 = pt_1[0], pt_1[1]  # Example point 1
     x2, y2 = pt_2[0], pt_2[1]  # Example point 2
     radius = int(np.sqrt((x2 - x1)**2 + (y2 - y1)**2) / 2)
@@ -159,30 +184,31 @@ def mod_mask(mask, pt_1, pt_2):
     # Calculate x and y coordinates of the arc to limit to semi-circle
     x_arc = mid_x + radius * np.cos(angle) * np.cos(theta) - radius * np.sin(angle) * np.sin(theta)
     y_arc = mid_y + radius * np.sin(angle) * np.cos(theta) + radius * np.cos(angle) * np.sin(theta)
+    time2 = time.time()
+
 
     m = (y2 - y1) / (x2 - x1)  # slope
     b = y1 - m * x1  # y-intercept
+
     # Mask the semi-circle area (all pixels within the semi-circle)
-    for y in range(mask.shape[0]):
-        for x in range(mask.shape[1]):
-            if (x - mid_x)**2 + (y - mid_y)**2 <= (radius)**2:  # Inside the circle
-                if y < m*x+b:  # Only the lower semi-circle
-                    mask[y, x] = 0  # Mark as within semi-circle
+    fill_mask(mask, mid_x, mid_y, radius, m, b)
 
     return mask
 
 def plot_semi(image, pt_1_list, pt_2_list, plot_button):
     # Load the image
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB for correct color display
+
     mask = np.zeros(image.shape[:2], dtype=np.uint8)
     mask = mod_mask(mask, pt_1_list[0], pt_2_list[0])
     mask = mod_mask(mask, pt_1_list[1], pt_2_list[1])
-
     # Extract pixel values within the semi-circle
     extracted_pixels = image[mask == 255]
 
     # Display the masked semi-circle area for visualization
     masked_image = cv2.bitwise_and(image, image, mask=mask)
+
+
     if plot_button:
       # Plot the two original points for reference
       # plt.plot([x1, x2], [y1, y2], 'bo')  # Plot the two points in blue for clarity
@@ -221,17 +247,21 @@ def face_detection(image):
 
 def check_output_path(video_path):
   output_video_path = re.sub(r'(DATASET_\d)', r'\1_IN', video_path)
+  print(output_video_path)
   directory_path = os.path.dirname(output_video_path)
+  exist = 0
   if not os.path.exists(directory_path):
+    exist = 0
     os.makedirs(directory_path)
     print(f"Directory created: {directory_path}")
-  else:
-    print(f"Directory already exists: {directory_path}")
+  elif os.path.exists(output_video_path):
+    exist = 1
+    print(f"Directory already exists but file exists: {directory_path}")
 
-  return output_video_path
+  return output_video_path, exist
 
 def segment_one_video(video_path, output_video_path, area_names):
-    subject = re.search(r'subject(\d+)', video_path).group(1)
+    subject_num = re.search(r's(\d+)', video_path).group(1)
     cap = cv2.VideoCapture(video_path)
     processed_frames = []
     fps = int(cap.get(cv2.CAP_PROP_FPS))
@@ -241,30 +271,36 @@ def segment_one_video(video_path, output_video_path, area_names):
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
-
-    with tqdm(total=frame_count, desc=f"Processing {subject}", unit="frame") as pbar:
+    with tqdm(total=frame_count, desc=f"Processing {subject_num}", unit="frame") as pbar:
       while(cap.isOpened()):
           success, image = cap.read()
           if not success:
             print("End of frame")
             break
-
-          results = face_detection(image)
-          annotated_image = image.copy()
-          seq_num_list_1 = get_seq_num_facial_areas(facial_areas, area_names[0])
-          seq_num_list_2 = get_seq_num_facial_areas(facial_areas, area_names[1])
-          pt_min, pt_max = locate_eye_corner(results, seq_num_list_1, annotated_image)
-          pt_min_2, pt_max_2 = locate_eye_corner(results, seq_num_list_2, annotated_image)
-
-          # plot_landmark(annotated_image, area_name, results, pt_min, pt_max, True)
-          masked_image, extracted_pixels = plot_semi(annotated_image, [pt_min, pt_min_2], [pt_max, pt_max_2], False)
-          processed_frames.append(masked_image)
           
-          out.write(masked_image)
-          pbar.update(1)
+          results = face_detection(image)
+          if results.multi_face_landmarks==None:
+            print(f"No landmarks detected in frame {pbar.n}. Skipping this frame.")
+            masked_image = np.zeros(image.shape[:2], dtype=np.uint8) 
+            processed_frames.append(masked_image)
+            out.write(masked_image)
+            continue
+          else:
+            annotated_image = image.copy()
+            seq_num_list_1 = get_seq_num_facial_areas(facial_areas, area_names[0])
+            seq_num_list_2 = get_seq_num_facial_areas(facial_areas, area_names[1])
+            pt_min, pt_max = locate_eye_corner(results, seq_num_list_1, annotated_image)
+            pt_min_2, pt_max_2 = locate_eye_corner(results, seq_num_list_2, annotated_image)
+            # plot_landmark(annotated_image, area_name, results, pt_min, pt_max, True)
+            masked_image, extracted_pixels = plot_semi(annotated_image, [pt_min, pt_min_2], [pt_max, pt_max_2], False)
+            processed_frames.append(masked_image)
+            out.write(masked_image)
+            pbar.update(1)
+      
 
     cap.release()
     out.release()
+
     return processed_frames
   
 

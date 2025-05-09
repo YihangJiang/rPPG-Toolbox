@@ -8,7 +8,7 @@ import glob
 import os
 import re
 from multiprocessing import Pool, Process, Value, Array, Manager
-
+import resource
 import cv2
 import numpy as np
 from dataset.data_loader.BaseLoader import BaseLoader
@@ -68,7 +68,6 @@ class UBFCrPPGLoader(BaseLoader):
         """ invoked by preprocess_dataset for multi_process."""
         filename = os.path.split(data_dirs[i]['path'])[-1]
         saved_filename = data_dirs[i]['index']
-        print("UBFC-subprocess" + str(saved_filename))
 
         # Read Frames
         if 'None' in config_preprocess.DATA_AUG:
@@ -82,7 +81,6 @@ class UBFCrPPGLoader(BaseLoader):
         else:
             raise ValueError(f'Unsupported DATA_AUG specified for {self.dataset_name} dataset! Received {config_preprocess.DATA_AUG}.')
 
-        print("start reading labels")
         # Read Labels
         if config_preprocess.USE_PSUEDO_PPG_LABEL:
             bvps = self.generate_pos_psuedo_labels(frames, fs=self.config_data.FS)
@@ -100,19 +98,18 @@ class UBFCrPPGLoader(BaseLoader):
     def read_video(video_file):
         """Reads a video file, returns frames(T, H, W, 3) """
         print("start reading " + video_file)
+        print(f"UBFCrPPGLoader: Memory usage: {(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024):.2f} MB")
         VidObj = cv2.VideoCapture(video_file)
         VidObj.set(cv2.CAP_PROP_POS_MSEC, 0)
         success, frame = VidObj.read()
         frames = list()
         i= 0 
         while success:
-            print(i)
             i = i + 1
             frame = cv2.cvtColor(np.array(frame), cv2.COLOR_BGR2RGB)
             frame = np.asarray(frame)
             frames.append(frame)
             success, frame = VidObj.read()
-        print("out read_video")
         return np.asarray(frames)
 
     @staticmethod
