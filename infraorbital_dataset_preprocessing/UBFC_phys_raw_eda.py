@@ -106,7 +106,7 @@ from scipy.fftpack import fft
 
 vid_fs = 35  # Hz
 bvp_fs = 64
-heartpy = True
+heartpy = False 
 chunk_size = 640  # frames (samples)
 chunked_heart_rates = []
 t1_bvp_list, t2_bvp_list, t3_bvp_list = [], [], []
@@ -187,64 +187,8 @@ plt.show()
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Example PPG signal (replace this with your actual signal)
-# For demonstration, we generate a synthetic PPG signal with a sampling rate of 100 Hz
-sampling_rate = 100  # 100 Hz
-t = np.linspace(0, 10, 10 * sampling_rate)  # 10 seconds of data
-signal = np.sin(2 * np.pi * 1.0 * t) + 0.5 * np.random.randn(t.size)  # 1 Hz signal with noise
-
-# Process the signal
-processed_data, heart_rate = hp.process(signal, sampling_rate)
-
-# Print heart rate
-print(f"Heart rate: {heart_rate['BPM']} BPM")
-
-# Visualize the processed signal and the detected peaks
-hp.plotter(processed_data)
-
-# %%
-import heartpy as hp
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-
-# List to store the heart rates from all signals
-heart_rates = []
-
-# Assuming signals is a list of 50 PPG signals, replace with actual data
-# For demonstration, let's simulate 50 PPG signals
-# Each signal has 1000 samples and a sampling rate of 100 Hz
-sampling_rate = 100  # 100 Hz
-num_signals = 50
-signal_length = 1000
-signals = [np.sin(2 * np.pi * 1.0 * np.linspace(0, 10, signal_length)) + 0.5 * np.random.randn(signal_length) for _ in range(num_signals)]
-
-# Process each signal and calculate heart rate
-for signal in signals:
-    processed_data, heart_rate = hp.process(signal, sampling_rate)
-    heart_rates.append(heart_rate['BPM'])
-
-# Plot histogram of heart rates to visualize the most frequent heart rate
-plt.figure(figsize=(10, 6))
-plt.hist(heart_rates, bins=10, edgecolor='black')
-plt.title('Distribution of Heart Rates Across 50 Signals')
-plt.xlabel('Heart Rate (BPM)')
-plt.ylabel('Frequency')
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-# Optionally, you can also calculate the most frequent heart rate
-most_frequent_hr = pd.Series(heart_rates).mode()[0]
-print(f"The most frequent heart rate is {most_frequent_hr:.2f} BPM")
-
-
-# %%
-import numpy as np
-import matplotlib.pyplot as plt
-
 # Convert list to 2D numpy array (shape: num_signals x signal_length)
-group_of_signals = np.array(t2_bvp_list)
+group_of_signals = np.array(t3_bvp_list)
 
 # Compute PSD using Welch's method
 frequencies, psd_group = welch(group_of_signals, fs=bvp_fs, nperseg=256, axis=1)
@@ -260,6 +204,205 @@ plt.xlabel("Frequency (Hz)")
 plt.ylabel("Power/Frequency (dB/Hz)")
 plt.xlim(0.5, 5)
 plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# %%
+from e2epyppg.utils import get_data
+from e2epyppg.ppg_sqa import sqa
+
+# %%
+# Provide your PPG signal and sampling rate (you can use your own signal in format `np.ndarray`)
+t1_list = []
+t2_list = []
+t3_list = []
+for i, file in enumerate(csv_files):
+    print(i, file)
+    # Load signal
+    df = pd.read_csv(file, header=None)
+    bvp_signal = df.iloc[:, 0].dropna().values
+
+    input_sig = bvp_signal
+
+    sampling_rate = 64
+
+    # Set this parameter True if the signal has not been filtered:
+    filter_signal = True
+
+    # Call the PPG signal quality assessment function
+    clean_indices, noisy_indices = sqa(input_sig, sampling_rate, filter_signal)
+    if 'T1' in file:
+        if len(clean_indices)>0:
+            t1_list.append(len(clean_indices[0])/len(noisy_indices[0]))
+        else:
+            t1_list.append(0)
+    elif 'T2' in file:
+        if len(clean_indices)>0:
+            t2_list.append(len(clean_indices[0])/len(noisy_indices[0]))
+        else:
+            t2_list.append(0)
+    else:
+        if len(clean_indices)>0:
+            t3_list.append(len(clean_indices[0])/len(noisy_indices[0]))
+        else:
+            t3_list.append(0)
+
+
+# %%
+
+import numpy as np
+import neurokit2 as nk
+import matplotlib.pyplot as plt
+
+# Example PPG signal (replace with your actual 11520-sample signal)
+# signal = your actual signal
+signal = np.random.randn(11520)  # placeholder
+
+fs = 64  # Sampling frequency (Hz)
+window_size = 8 * fs  # 8 seconds = 512 samples
+step_size = window_size // 2  # 50% overlap = 256 samples
+
+heart_rates = []
+timestamps = []
+
+for start in range(0, len(signal) - window_size + 1, step_size):
+    window = signal[start:start + window_size]
+    
+    try:
+        # Preprocess and detect peaks
+        cleaned = nk.ppg_clean(window, sampling_rate=fs)
+        peaks, _ = nk.ppg_peaks(cleaned, sampling_rate=fs)
+
+        # Calculate heart rate from detected peaks
+        rpeaks = np.where(peaks["PPG_Peaks"] == 1)[0]
+        if len(rpeaks) >= 2:
+            ibi = np.diff(rpeaks) / fs  # Inter-beat intervals in seconds
+            hr = 60 / np.mean(ibi)  # Convert to BPM
+        else:
+            hr = np.nan  # Not enough peaks
+    except Exception:
+        hr = np.nan
+
+    heart_rates.append(hr)
+    timestamps.append(start / fs)
+
+# Plotting the heart rate trend
+plt.plot(timestamps, heart_rates, marker='o')
+plt.xlabel("Time (s)")
+plt.ylabel("Heart Rate (BPM)")
+plt.title("Heart Rate Over Time (Sliding Window)")
+plt.grid(True)
+plt.show()
+
+# %%
+import numpy as np
+import neurokit2 as nk
+import matplotlib.pyplot as plt
+
+# Example PPG signal (replace with your actual 11520-sample signal)
+# signal = your actual signal
+heart_rates = []
+for signal in t1_bvp_list:
+    fs = 64  # Sampling frequency (Hz)
+    window_size = 8 * fs  # 8 seconds = 512 samples
+    step_size = window_size // 2  # 50% overlap = 256 samples
+
+    timestamps = []
+
+    for start in range(0, len(signal) - window_size + 1, step_size):
+        window = signal[start:start + window_size]
+        
+        try:
+            # Preprocess and detect peaks
+            cleaned = nk.ppg_clean(window, sampling_rate=fs)
+            peaks, _ = nk.ppg_peaks(window, sampling_rate=fs)
+
+            # Calculate heart rate from detected peaks
+            rpeaks = np.where(peaks["PPG_Peaks"] == 1)[0]
+            if len(rpeaks) >= 2:
+                ibi = np.diff(rpeaks) / fs  # Inter-beat intervals in seconds
+                hr = 60 / np.mean(ibi)  # Convert to BPM
+            else:
+                hr = np.nan  # Not enough peaks
+        except Exception:
+            hr = np.nan
+
+        heart_rates.append(hr)
+        timestamps.append(start / fs)
+
+plt.figure(figsize=(8, 5))
+plt.hist(heart_rates, bins=180, edgecolor='black')
+plt.xlabel("Heart Rate (bpm)")
+plt.ylabel("Frequency")
+plt.xlim(20,200)
+plt.title(f"Heart Rate Distribution neurokit")
+plt.tight_layout()
+plt.show()
+
+# %%
+
+import numpy as np
+import neurokit2 as nk
+import matplotlib.pyplot as plt
+
+# Example PPG signal (replace with your actual 11520-sample signal)
+# signal = your actual signal
+heart_rates = []
+for signal in t1_bvp_list:
+    fs = 64  # Sampling frequency (Hz)
+    window_size = 8 * fs  # 8 seconds = 512 samples
+    step_size = window_size // 2  # 50% overlap = 256 samples
+
+    timestamps = []
+
+    for start in range(0, len(signal) - window_size + 1, step_size):
+        window = signal[start:start + window_size]
+        
+        try:
+            wd, m = hp.process(window, sample_rate=fs)
+            hr = m['bpm']  # Heart rate in BPM
+        except:
+            hr = np.nan  # Handle bad segments
+
+        heart_rates.append(hr)
+        timestamps.append(start / fs)
+
+plt.figure(figsize=(8, 5))
+plt.hist(heart_rates, bins=180, edgecolor='black')
+plt.xlabel("Heart Rate (bpm)")
+plt.ylabel("Frequency")
+plt.xlim(20,200)
+plt.title(f"Heart Rate Distribution HeartPy")
+plt.tight_layout()
+plt.show()
+# %%
+
+# %%
+heart_rates = []
+for signal in t1_bvp_list:
+    fs = 64  # Sampling frequency (Hz)
+    window_size = 8 * fs  # 8 seconds = 512 samples
+    step_size = window_size // 2  # 50% overlap = 256 samples
+
+    timestamps = []
+
+    for start in range(0, len(signal) - window_size + 1, step_size):
+        window = signal[start:start + window_size]
+        
+        try:
+            hr_mean, _, _ = estimate_hr_fft(window, fs=bvp_fs)
+        except:
+            hr = np.nan  # Handle bad segments
+
+        heart_rates.append(hr_mean)
+        timestamps.append(start / fs)
+
+plt.figure(figsize=(8, 5))
+plt.hist(heart_rates, bins=180, edgecolor='black')
+plt.xlabel("Heart Rate (bpm)")
+plt.ylabel("Frequency")
+plt.xlim(20,200)
+plt.title(f"Heart Rate Distribution FFT")
 plt.tight_layout()
 plt.show()
 
