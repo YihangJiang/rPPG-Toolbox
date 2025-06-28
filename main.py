@@ -227,7 +227,7 @@ if __name__ == "__main__":
 
     if config.TOOLBOX_MODE == "train_and_test" or config.TOOLBOX_MODE == "only_test":
         # test_loader
-        print("this is the test dataset path " + str(config.TEST.DATA.DATA_PATH))
+        print("this is the test dataset path " + str(config.TEST.DATA.DATA_PATH) + " now start dataloader")
         if config.TEST.DATA.DATASET == "UBFC-rPPG":
             test_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
         elif config.TEST.DATA.DATASET == "PURE":
@@ -254,7 +254,7 @@ if __name__ == "__main__":
         # Create and initialize the test dataloader given the correct toolbox mode,
         # a supported dataset name, and a valid dataset path
         if config.TEST.DATA.DATASET and config.TEST.DATA.DATA_PATH:
-            print("test dataset name :" + str(config.TEST.DATA.DATASET))
+            print("test dataset name :" + str(config.TEST.DATA.DATASET) + "->test_loader (Data Loader)")
             test_data = test_loader(
                 name="test",
                 data_path=config.TEST.DATA.DATA_PATH,

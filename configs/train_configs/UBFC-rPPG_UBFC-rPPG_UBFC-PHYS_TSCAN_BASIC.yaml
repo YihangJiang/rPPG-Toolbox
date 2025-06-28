@@ -85,8 +85,8 @@ TEST:
     DATASET: UBFC-PHYS
     DO_PREPROCESS: true                    # if first time, should be true
     DATA_FORMAT: NDCHW
-    DATA_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_1"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_PRE"    # Processed dataset save path, need to be updated
+    DATA_PATH: "/work/yj167/DATASET_1"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/work/yj167/DATASET_PRE"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: ""
     BEGIN: 0.0
     END: 1.0
