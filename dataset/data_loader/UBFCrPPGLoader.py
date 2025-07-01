@@ -11,6 +11,7 @@ from multiprocessing import Pool, Process, Value, Array, Manager
 import resource
 import cv2
 import numpy as np
+import pandas as pd
 from dataset.data_loader.BaseLoader import BaseLoader
 from tqdm import tqdm
 
@@ -69,6 +70,15 @@ class UBFCrPPGLoader(BaseLoader):
         filename = os.path.split(data_dirs[i]['path'])[-1]
         saved_filename = data_dirs[i]['index']
 
+        face_stats = pd.read_csv('face_stats.csv', index_col=[0])
+        new_row = [ int(re.search(r"\d+", saved_filename).group()),  # extract subject number from filename
+                'rppg',                  # dataset name from config
+                self.num_no_face_frames,
+                self.num_multi_face_frames
+            ] 
+        if not ((face_stats == new_row).all(axis=1)).any():
+            face_stats.loc[len(face_stats)] = new_row
+        face_stats.to_csv('face_stats.csv')
         # Read Frames
         if 'None' in config_preprocess.DATA_AUG:
             # Utilize dataset-specific function to read video

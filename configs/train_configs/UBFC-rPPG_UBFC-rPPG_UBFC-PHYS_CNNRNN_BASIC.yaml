@@ -4,7 +4,7 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 30
   LR: 9e-3
-  MODEL_FILE_NAME: UBFC_UBFC_PURE_tscan
+  MODEL_FILE_NAME: UBFC_UBFC_PURE_cnnrnn
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 30
@@ -113,9 +113,7 @@ LOG:
   PATH: runs/exp
 MODEL:
   DROP_RATE: 0.2
-  NAME: Tscan
-  TSCAN:
-    FRAME_DEPTH: 10
+  NAME: cnnrnn
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"

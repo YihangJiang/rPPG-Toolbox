@@ -63,6 +63,9 @@ class BaseLoader(Dataset):
         self.data_format = config_data.DATA_FORMAT
         self.do_preprocess = config_data.DO_PREPROCESS
         self.config_data = config_data
+        self.num_no_face_frames = 0
+        self.num_multi_face_frames = 0
+        self.face_stats = []  # to store all face stats
 
         assert (config_data.BEGIN < config_data.END)
         assert (config_data.BEGIN > 0 or config_data.BEGIN == 0)
@@ -321,11 +324,13 @@ class BaseLoader(Dataset):
             if len(face_zone) < 1:
                 print("ERROR: No Face Detected")
                 face_box_coor = [0, 0, frame.shape[0], frame.shape[1]]
+                self.num_no_face_frames += 1
             elif len(face_zone) >= 2:
                 # Find the index of the largest face zone
                 # The face zones are boxes, so the width and height are the same
                 max_width_index = np.argmax(face_zone[:, 2])  # Index of maximum width
                 face_box_coor = face_zone[max_width_index]
+                self.num_multi_face_frames += 1
                 print("Warning: More than one faces are detected. Only cropping the biggest one.")
             else:
                 face_box_coor = face_zone[0]
