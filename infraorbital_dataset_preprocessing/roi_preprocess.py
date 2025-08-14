@@ -14,7 +14,7 @@ area_names = ['Right_eye', 'Left_eye']
 
 # %%
 
-vidcap = cv2.VideoCapture('./test.mov')
+vidcap = cv2.VideoCapture('/work/yj167/DATASET_1/s4/vid_s4_T3.avi')
 success, image = vidcap.read()
 # %%
 mp_face_mesh = mp.solutions.face_mesh
@@ -88,16 +88,17 @@ print(np.unique(seq_num_list))
 pt_min, pt_max = locate_eye_corner(results, seq_num_list, annotated_image)
 
 # %%
-landmarks = results.multi_face_landmarks[0]
-for facial_area in facial_areas.keys():
-    facial_area_obj = facial_areas[facial_area]
-    plot_landmark(annotated_image, facial_area, results, pt_min, pt_max, False)
-    cv2.circle(annotated_image, pt_min, 10, (255, 0, 0), -1)
-    cv2.circle(annotated_image, pt_max, 10, (255, 0, 0), -1)
+# landmarks = results.multi_face_landmarks[0]
+# for facial_area in facial_areas.keys():
+#     facial_area_obj = facial_areas[facial_area]
+#     plot_landmark(annotated_image, facial_area, results, pt_min, pt_max, False)
+#     cv2.circle(annotated_image, pt_min, 10, (255, 0, 0), -1)
+#     cv2.circle(annotated_image, pt_max, 10, (255, 0, 0), -1)
+plot_rois(results, image, "right malar")
 # %%
-masked_image, _ = plot_semi(annotated_image, pt_min, pt_max, False)
-plot_rois(results, image)
-
+# masked_image, _ = plot_semi(annotated_image, pt_min, pt_max, False)
+input_video_path, output_video_path = '/work/yj167/DATASET_1/s4/vid_s4_T3.avi', './plot1.avi'
+annotate_video_with_rois(input_video_path, output_video_path, face_mesh, "right malar", (320,320))
 
 # %%
 results = face_detection(image)
@@ -110,7 +111,29 @@ pt_min_2, pt_max_2 = locate_eye_corner(results, seq_num_list_2, annotated_image)
 time5 = time.time()
 # plot_landmark(annotated_image, area_name, results, pt_min, pt_max, True)
 masked_image, extracted_pixels = plot_semi(annotated_image, [pt_min, pt_min_2], [pt_max, pt_max_2], False)
+# %%
+src_root = "/work/yj167/DATASET_1"
+dst_root = "/work/yj167/DATASET_ROI"
 
+list_phys1, list_phys2 = get_ubfc_paths(src_root, dst_root)
+# %%
+src_root = "/hpc/group/dunnlab/rppg_data/data/DATASET_2"
+dst_root = "/work/yj167/DATASET_2ROI"
+
+list_rppg1, list_rppg2 = get_ubfc_paths(src_root, dst_root)
+
+
+# %%
+for i in range(len(list_1)):
+    mp_face_mesh = mp.solutions.face_mesh
+    face_mesh = mp_face_mesh.FaceMesh(
+        static_image_mode=True,
+        refine_landmarks=True,
+        max_num_faces=2,
+        min_detection_confidence=0.5)
+    input_video_path, output_video_path = list_1[i], list_2[i]
+    print(list_1[i], list_2[i])
+    annotate_video_with_rois(input_video_path, output_video_path, face_mesh, "right malar", (320,320))
 
 
 # %%

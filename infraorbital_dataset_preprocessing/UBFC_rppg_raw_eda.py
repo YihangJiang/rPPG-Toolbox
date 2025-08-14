@@ -1,12 +1,19 @@
 # %%
 import os
+import sys
 import pandas as pd
+# Add the parent folder of 'rPPG-Toolbox' to sys.path
+parent_dir = '/hpc/group/dunnlab/rppg_data/rPPG-Toolbox'
+sys.path.insert(0, parent_dir)
+
 import matplotlib.pyplot as plt
 from scipy.signal import welch
 from scipy.signal import periodogram
 import cv2
 import re
 import heartpy as hp
+from config import get_config
+
 
 # Directory containing the CSV and video files
 test_data_dir = '/hpc/group/dunnlab/rppg_data/data/DATASET_2/'
@@ -15,19 +22,18 @@ test_data_dir = '/hpc/group/dunnlab/rppg_data/data/DATASET_2/'
 subfolder_pattern = re.compile(r'subject\d+')
 
 # Iterate through subfolders
-csv_files = []
+txt_files = []
 vid_files = []
 for root, dirs, files in os.walk(test_data_dir):
     # Only consider directories that match the pattern
     if re.search(subfolder_pattern, os.path.basename(root)):
-        csv_files.extend([os.path.join(root, f) for f in files if f.endswith('.txt')])
+        txt_files.extend([os.path.join(root, f) for f in files if f.endswith('.txt')])
         vid_files.extend([os.path.join(root, f) for f in files if f.endswith('.avi')])
 # %%
 # Initialize list to store number of rows in each CSV file
 bvp_counts = []
-
 # Count the number of rows in each file
-for file in csv_files:
+for file in txt_files:
     print(file)
     try:
         # Read the file content
@@ -48,6 +54,64 @@ plt.ylabel("Frequency")
 plt.title("Histogram of BVP Reading Counts Across Files")
 plt.tight_layout()
 plt.show()
+
+# %%
+import matplotlib.pyplot as plt
+
+bvp_counts = []
+all_bvp_values = []
+
+# csv_files = [csv_files[0]]
+for file in txt_files:
+    print(file)
+    try:
+        with open(file, "r") as f:
+            str1 = f.read()
+            str1 = str1.split("\n")
+            print()
+            bvp_values = [float(x) for x in str1[0].split()]
+
+        bvp_counts.append(len(bvp_values))
+        all_bvp_values.extend(bvp_values)
+    except Exception as e:
+        print(f"Error reading {file}: {e}")
+        bvp_counts.append(0)
+
+# Plot histogram of all BVP values
+plt.figure(figsize=(10, 5))
+plt.hist(all_bvp_values, bins=200, edgecolor='black')
+plt.title("Histogram of All PPG Values")
+plt.xlabel("PPG Value")
+plt.ylabel("Count")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# %%
+for file in csv_files:
+    try:
+        # Read the file
+        with open(file, "r") as f:
+            str1 = f.read().split("\n")
+            bvp_values = [float(x) for x in str1[0].split()]
+
+        # Extract subject number from path
+        subject_match = re.search(r"subject\d+", file)
+        subject_label = subject_match.group() if subject_match else "Unknown"
+
+        # Plot histogram
+        plt.figure(figsize=(8, 4))
+        plt.hist(bvp_values, bins=200, edgecolor='black')
+        plt.title(f"BVP Histogram - {subject_label}")
+        plt.xlabel("BVP Value")
+        plt.ylabel("Count")
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+    except Exception as e:
+        print(f"Error processing {file}: {e}")
+
 
 # %%
 # Initialize list to store frame counts

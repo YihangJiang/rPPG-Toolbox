@@ -72,9 +72,10 @@ class UBFCrPPGLoader(BaseLoader):
 
         face_stats = pd.read_csv('face_stats.csv', index_col=[0])
         new_row = [ int(re.search(r"\d+", saved_filename).group()),  # extract subject number from filename
-                'rppg',                  # dataset name from config
+                self.config_data.DATASET,                  # dataset name from config
                 self.num_no_face_frames,
-                self.num_multi_face_frames
+                self.num_multi_face_frames,
+                -1
             ] 
         if not ((face_stats == new_row).all(axis=1)).any():
             face_stats.loc[len(face_stats)] = new_row

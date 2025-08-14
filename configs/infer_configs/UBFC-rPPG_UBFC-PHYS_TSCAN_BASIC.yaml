@@ -57,6 +57,6 @@ INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: FFT        # "FFT" or "peak detection"
   EVALUATION_WINDOW:
-    USE_SMALLER_WINDOW: False        # Change this if you'd like an evaluation window smaller than the test video length
+    USE_SMALLER_WINDOW: true        # Change this if you'd like an evaluation window smaller than the test video length
     WINDOW_SIZE: 10        # In seconds
   MODEL_PATH:   "./final_model_release/UBFC-rPPG_TSCAN.pth"

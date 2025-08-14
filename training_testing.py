@@ -36,7 +36,7 @@ args = types.SimpleNamespace()
 # TSCAN rppg physc
 # args.config_file = "/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_TSCAN_BASIC.yaml"
 # baseline
-args.config_file = "/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_CNNRNN_BASIC.yaml"
+args.config_file = "/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_CNNRNN_WARP.yaml"
 config = get_config(args)
 print('Configuration:')
 print(config, end='\n\n')
@@ -71,7 +71,7 @@ train_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
 valid_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
 test_loader = data_loader.UBFCPHYSLoader.UBFCPHYSLoader
 
-
+# %%
 train_data_loader = train_loader(
     name="train",
     data_path=config.TRAIN.DATA.DATA_PATH,
@@ -98,6 +98,7 @@ data_loader_dict["valid"] = DataLoader(
     worker_init_fn=seed_worker,
     generator=general_generator
 )
+# %%
 
 test_data = test_loader(
     name="test",
