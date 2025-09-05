@@ -21,12 +21,12 @@ class CNNRNNTrainer(BaseTrainer):
         self.batch_size = config.TRAIN.BATCH_SIZE
         self.num_of_gpu = config.NUM_OF_GPU_TRAIN
         self.base_len = self.num_of_gpu * self.frame_depth
-        self.chunk_len = config.TRAIN.DATA.PREPROCESS.CHUNK_LENGTH
         self.config = config
         self.min_valid_loss = None
         self.best_epoch = 0
 
         if config.TOOLBOX_MODE == "train_and_test":
+            self.chunk_len = config.TRAIN.DATA.PREPROCESS.CHUNK_LENGTH
             self.model = CNNRNNModel(self.chunk_len).to(self.device)
             self.model = torch.nn.DataParallel(self.model, device_ids=list(range(self.num_of_gpu)))
 
@@ -37,7 +37,8 @@ class CNNRNNTrainer(BaseTrainer):
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 self.optimizer, max_lr=config.TRAIN.LR, epochs=config.TRAIN.EPOCHS, steps_per_epoch=self.num_train_batches)
         elif config.TOOLBOX_MODE == "only_test":
-            self.model = CNNRNNModel().to(self.device)
+            self.chunk_len = config.TEST.DATA.PREPROCESS.CHUNK_LENGTH
+            self.model = CNNRNNModel(self.chunk_len).to(self.device)
             self.model = torch.nn.DataParallel(self.model, device_ids=list(range(self.num_of_gpu)))
         else:
             raise ValueError("CNNRNNTrainer initialized in incorrect toolbox mode!")
@@ -133,7 +134,7 @@ class CNNRNNTrainer(BaseTrainer):
             if not os.path.exists(self.config.INFERENCE.MODEL_PATH):
                 raise ValueError("Model path for inference is incorrect.")
             self.model.load_state_dict(torch.load(self.config.INFERENCE.MODEL_PATH))
-            print("Testing uses pretrained model!")
+            print("Testing uses pretrained model!" + str(self.config.INFERENCE.MODEL_PATH))
         else:
             if self.config.TEST.USE_LAST_EPOCH:
                 path = os.path.join(self.model_dir, f"{self.model_file_name}_Epoch{self.max_epoch_num - 1}.pth")

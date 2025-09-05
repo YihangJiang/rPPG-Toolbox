@@ -8,12 +8,24 @@ import matplotlib.pyplot as plt
 import os
 import mediapipe as mp
 from video_utils import *
-area_names = ['Right_eye', 'Left_eye']
 
 src_root = "/work/yj167/DATASET_1"
-dst_root = "/work/yj167/DATASET_ROI"
+dst_root = "/work/yj167/DATASET_1ROI"
 
 list_phys1, list_phys2 = get_ubfc_paths(src_root, dst_root)
+
+# %%
+list_phys1 = [
+    f for f in list_phys1
+    if int(f.split('/')[4][1:]) > 12 and int(f.split('/')[4][1:]) > 29
+]
+
+list_phys2 = [
+    f for f in list_phys2
+    if int(f.split('/')[4][1:]) > 12 and int(f.split('/')[4][1:]) > 29
+]
+
+# %%
 for i in range(len(list_phys1)):
     mp_face_mesh = mp.solutions.face_mesh
     face_mesh = mp_face_mesh.FaceMesh(

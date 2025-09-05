@@ -1,0 +1,10 @@
+artifact_location: file:///hpc/group/dunnlab/rppg_data/rPPG-Toolbox/mlruns/0/models/m-4620b4875d224c7fbb85d99bb4a0114a/artifacts
+creation_timestamp: 1756842946515
+experiment_id: '0'
+last_updated_timestamp: 1756842971685
+model_id: m-4620b4875d224c7fbb85d99bb4a0114a
+model_type: null
+name: model
+source_run_id: 200594a50cef46c4bb765628b86a036d
+status: 2
+status_message: null

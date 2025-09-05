@@ -209,11 +209,13 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
     # Save missed frame indices
     if missed_frames:
         if len(missed_frames_df) == 0:
-           missed_frames_df.loc[input_video_path, 'missed_frame'] = missed_frames
+           missed_frames_df.loc[input_video_path, 'missed_frame'] = str(missed_frames)
         elif pd.Series(input_video_path).isin(missed_frames_df['file_path']).any():
-           missed_frames_df.loc[missed_frames_df['file_path']==input_video_path, 'missed_frame'] = missed_frames
+           missed_frames_df.loc[missed_frames_df['file_path']==input_video_path, 'missed_frame'] = str(missed_frames)
         else:
-           missed_frames_df.loc[len(missed_frames_df)] = [input_video_path, missed_frames]
+            missed_frames_df.loc[-1] = [input_video_path, missed_frames]
+            missed_frames_df.index = missed_frames_df.index + 1
+            missed_frames_df = missed_frames_df.sort_index()
     print(missed_frames_df)
     missed_frames_df.to_csv('./missed_frames.csv')
     print(f"Warped region video saved to: {output_video_path}")

@@ -1,0 +1,14 @@
+artifact_uri: file:///hpc/group/dunnlab/rppg_data/rPPG-Toolbox/mlruns/0/200594a50cef46c4bb765628b86a036d/artifacts
+end_time: 1756842972940
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 200594a50cef46c4bb765628b86a036d
+run_name: thoughtful-worm-25
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1756842916631
+status: 3
+tags: []
+user_id: yj167

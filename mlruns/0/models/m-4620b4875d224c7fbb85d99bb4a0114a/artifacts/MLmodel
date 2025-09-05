@@ -1,0 +1,23 @@
+artifact_path: file:///hpc/group/dunnlab/rppg_data/rPPG-Toolbox/mlruns/0/models/m-4620b4875d224c7fbb85d99bb4a0114a/artifacts
+flavors:
+  python_function:
+    config:
+      device: null
+    data: data
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.pytorch
+    pickle_module_name: mlflow.pytorch.pickle_module
+    python_version: 3.10.14
+  pytorch:
+    code: null
+    model_data: data
+    pytorch_version: 2.5.1
+mlflow_version: 3.3.2
+model_id: m-4620b4875d224c7fbb85d99bb4a0114a
+model_size_bytes: 2684880
+model_uuid: m-4620b4875d224c7fbb85d99bb4a0114a
+prompts: null
+run_id: 200594a50cef46c4bb765628b86a036d
+utc_time_created: '2025-09-02 19:55:46.699203'
