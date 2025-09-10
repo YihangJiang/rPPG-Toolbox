@@ -93,7 +93,6 @@ class CNNRNNTrainer(BaseTrainer):
             mean_training_losses.append(np.mean(train_loss))
             self.save_model(epoch)
 
-
             if not self.config.TEST.USE_LAST_EPOCH:
                 valid_loss = self.valid(data_loader)
                 mean_valid_losses.append(valid_loss)

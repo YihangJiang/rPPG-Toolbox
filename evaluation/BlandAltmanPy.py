@@ -6,6 +6,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import math
 from scipy.stats import gaussian_kde
+from sklearn.metrics import r2_score
+from scipy.stats import pearsonr
+
+
 
 class BlandAltman():
 
@@ -99,18 +103,28 @@ class BlandAltman():
 
         self.gold_std = self.rand_jitter(self.gold_std)
         self.new_measure = self.rand_jitter(self.new_measure)
+        r2 = r2_score(self.gold_std, self.new_measure)
+        pearson_corr, _ = pearsonr(self.gold_std, self.new_measure)
 
         fig = plt.figure(figsize=figure_size)
         ax=fig.add_axes([0,0,1,1])
         xy = np.vstack([self.gold_std,self.new_measure])
         z = gaussian_kde(xy)(xy)
-        ax.scatter(self.gold_std,self.new_measure, c=z, s=50)
+        sc = ax.scatter(self.gold_std,self.new_measure, c=z, s=50)
         x_vals = np.array(ax.get_xlim())
         ax.plot(x_vals,x_vals,'--',color='black', label='Line of Slope = 1')
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
+        stats_text = f'$R^2$ = {r2:.2f}\nPearson r = {pearson_corr:.2f}'
+        ax.text(0.05, 0.95, stats_text, transform=ax.transAxes,
+            verticalalignment='top', fontsize=12,
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
         ax.set_title(the_title)
         ax.grid()
+        
+        cbar = plt.colorbar(sc, ax=ax)
+        cbar.set_label("Point Density")
+
         plt.xlim(measure_lower_lim, measure_upper_lim)
         plt.ylim(measure_lower_lim, measure_upper_lim)
         plt.savefig(os.path.join(self.save_path, file_name),bbox_inches='tight', dpi=300)

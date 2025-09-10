@@ -1,6 +1,6 @@
 # %%
-%reload_ext autoreload
-%autoreload 2
+# %reload_ext autoreload
+# %autoreload 2
 
 import cv2
 import math
