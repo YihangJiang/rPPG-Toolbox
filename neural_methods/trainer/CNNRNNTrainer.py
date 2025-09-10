@@ -1,6 +1,7 @@
 import os
 import torch
 import torch.optim as optim
+from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 from tqdm import tqdm
 
@@ -33,15 +34,22 @@ class CNNRNNTrainer(BaseTrainer):
             self.num_train_batches = len(data_loader["train"])
             self.criterion = torch.nn.MSELoss()
             self.optimizer = optim.AdamW(
-                self.model.parameters(), lr=config.TRAIN.LR, weight_decay=0)
-            self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
-                self.optimizer, max_lr=config.TRAIN.LR, epochs=config.TRAIN.EPOCHS, steps_per_epoch=self.num_train_batches)
+                self.model.parameters(), lr=config.TRAIN.LR, weight_decay=3e-4)
+            if config.TRAIN.SCHEDULER == 'constant':
+                self.scheduler = torch.optim.lr_scheduler.ConstantLR(
+                    self.optimizer, factor=1.0, total_iters=self.num_train_batches * config.TRAIN.EPOCHS
+                )
+            else:
+                self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                    self.optimizer, max_lr=config.TRAIN.LR, epochs=config.TRAIN.EPOCHS, steps_per_epoch=self.num_train_batches)
         elif config.TOOLBOX_MODE == "only_test":
             self.chunk_len = config.TEST.DATA.PREPROCESS.CHUNK_LENGTH
             self.model = CNNRNNModel(self.chunk_len).to(self.device)
             self.model = torch.nn.DataParallel(self.model, device_ids=list(range(self.num_of_gpu)))
         else:
             raise ValueError("CNNRNNTrainer initialized in incorrect toolbox mode!")
+
+        self.writer = SummaryWriter(log_dir = os.path.join(self.model_dir, "board"))
 
     def train(self, data_loader):
         if data_loader["train"] is None:
@@ -85,6 +93,7 @@ class CNNRNNTrainer(BaseTrainer):
             mean_training_losses.append(np.mean(train_loss))
             self.save_model(epoch)
 
+
             if not self.config.TEST.USE_LAST_EPOCH:
                 valid_loss = self.valid(data_loader)
                 mean_valid_losses.append(valid_loss)
@@ -94,11 +103,16 @@ class CNNRNNTrainer(BaseTrainer):
                     self.min_valid_loss = valid_loss
                     self.best_epoch = epoch
                     print(f"Update best model! Best epoch: {self.best_epoch}")
+            
+            self.writer.add_scalar('Loss/train', np.mean(train_loss), epoch)
+            self.writer.add_scalar('Loss/valid', valid_loss, epoch)
 
         if not self.config.TEST.USE_LAST_EPOCH:
             print(f"Best trained epoch: {self.best_epoch}, Min val loss: {self.min_valid_loss}")
         if self.config.TRAIN.PLOT_LOSSES_AND_LR:
             self.plot_losses_and_lrs(mean_training_losses, mean_valid_losses, lrs, self.config)
+
+        self.writer.close()
 
     def valid(self, data_loader):
         if data_loader["valid"] is None:

@@ -11,7 +11,7 @@
 start_time=$(date "+%Y-%m-%d %H:%M:%S")
 echo "Script started at: $start_time"
 
-python training_testing.py >> pp.txt
+python training_testing.py >> training_testing_output.txt
 
 end_time=$(date "+%Y-%m-%d %H:%M:%S")
 echo "Script ended at: $end_time"

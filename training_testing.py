@@ -1,6 +1,6 @@
 # %%
-# %reload_ext autoreload
-# %autoreload 2
+%reload_ext autoreload
+%autoreload 2
 import types
 from config import get_config
 from dataset import data_loader
@@ -61,6 +61,7 @@ def train(config, data_loader_dict):
         model_trainer = trainer.PhysFormerTrainer.PhysFormerTrainer(config, data_loader_dict)
     elif config.MODEL.NAME == 'cnnrnn':
         model_trainer = trainer.CNNRNNTrainer.CNNRNNTrainer(config, data_loader_dict) 
+        print("baseline trainer started")
     else:
         raise ValueError('Your Model is Not Supported  Yet!')
     model_trainer.train(data_loader_dict)

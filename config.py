@@ -21,6 +21,7 @@ _C.TRAIN = CN()
 _C.TRAIN.EPOCHS = 50
 _C.TRAIN.BATCH_SIZE = 4
 _C.TRAIN.LR = 1e-4
+_C.TRAIN.SCHEDULER = 'test'
 # Optimizer
 _C.TRAIN.OPTIMIZER = CN()
 # Optimizer Epsilon
@@ -355,6 +356,8 @@ _C.NUM_OF_GPU_TRAIN = 1
 # -----------------------------------------------------------------------------
 # Log settings
 # -----------------------------------------------------------------------------
+_C.TRAIN_LOG = CN()
+_C.TRAIN_LOG.PATH = "runs/exp"
 _C.LOG = CN()
 _C.LOG.PATH = "runs/exp"
 
