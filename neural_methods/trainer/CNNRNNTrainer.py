@@ -5,6 +5,7 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 from tqdm import tqdm
 
+from neural_methods.trainer.EarlyStopping import EarlyStopping
 from neural_methods.trainer.BaseTrainer import BaseTrainer
 from neural_methods.model.CNNRNN import CNNRNNModel
 from evaluation.metrics import calculate_metrics  # assuming same path as in TscanTrainer
@@ -25,6 +26,11 @@ class CNNRNNTrainer(BaseTrainer):
         self.config = config
         self.min_valid_loss = None
         self.best_epoch = 0
+        self.early_stopping = EarlyStopping(
+            patience = self.config.TRAIN.EARLY_STOPPING_PATIENCE,
+            min_delta = 0.01,
+            verbose=False
+        )
 
         if config.TOOLBOX_MODE == "train_and_test":
             self.chunk_len = config.TRAIN.DATA.PREPROCESS.CHUNK_LENGTH
@@ -96,15 +102,21 @@ class CNNRNNTrainer(BaseTrainer):
             if not self.config.TEST.USE_LAST_EPOCH:
                 valid_loss = self.valid(data_loader)
                 mean_valid_losses.append(valid_loss)
+                self.writer.add_scalar('Loss/train', np.mean(train_loss), epoch)
+                self.writer.add_scalar('Loss/valid', valid_loss, epoch)
+                self.early_stopping(valid_loss, epoch)
                 print('validation loss:', valid_loss)
+
+                if self.early_stopping.early_stop:
+                    print(f"Early stopping at epoch {epoch}. Best epoch was {self.early_stopping.best_epoch}")
+                    break
 
                 if self.min_valid_loss is None or valid_loss < self.min_valid_loss:
                     self.min_valid_loss = valid_loss
                     self.best_epoch = epoch
                     print(f"Update best model! Best epoch: {self.best_epoch}")
             
-            self.writer.add_scalar('Loss/train', np.mean(train_loss), epoch)
-            self.writer.add_scalar('Loss/valid', valid_loss, epoch)
+
 
         if not self.config.TEST.USE_LAST_EPOCH:
             print(f"Best trained epoch: {self.best_epoch}, Min val loss: {self.min_valid_loss}")

@@ -447,6 +447,7 @@ class BaseLoader(Dataset):
         """
 
         clip_num = frames.shape[0] // chunk_length
+        print("CLip_num" + str(clip_num))
         frames_clips = [frames[i * chunk_length:(i + 1) * chunk_length] for i in range(clip_num)]
         bvps_clips = [bvps[i * chunk_length:(i + 1) * chunk_length] for i in range(clip_num)]
         return np.array(frames_clips), np.array(bvps_clips)
@@ -461,7 +462,7 @@ class BaseLoader(Dataset):
         Returns:
             count: count of preprocessed data
         """
-
+        print("Saving clips:")
         if not os.path.exists(self.cached_path):
             os.makedirs(self.cached_path, exist_ok=True)
         count = 0

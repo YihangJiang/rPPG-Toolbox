@@ -4,6 +4,7 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 60
   LR: 1e-3
+  EARLY_STOPPING_PATIENCE: 20
   SCHEDULER: 'ct'
   MODEL_FILE_NAME: UBFC_UBFC_PHYS_cnnrnn
   PLOT_LOSSES_AND_LR: True
@@ -22,7 +23,7 @@ TRAIN:
       DATA_AUG: ['None']    # 'None' or 'Motion' is supported, used if the data path points to an augmented dataset or requires augmentation
       LABEL_TYPE: DiffNormalized
       DO_CHUNK: True
-      CHUNK_LENGTH: 180
+      CHUNK_LENGTH: 700
       CROP_FACE:
         DO_CROP_FACE: false 
         BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace
@@ -51,7 +52,7 @@ VALID:
       DATA_AUG: ['None']    # 'None' or 'Motion' is supported, used if the data path points to an augmented dataset or requires augmentation
       LABEL_TYPE: DiffNormalized
       DO_CHUNK: True
-      CHUNK_LENGTH: 180
+      CHUNK_LENGTH: 700
       CROP_FACE:
         DO_CROP_FACE: False 
         BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace
@@ -86,7 +87,7 @@ TEST:
       DATA_TYPE: [ 'DiffNormalized','Standardized' ]
       LABEL_TYPE: DiffNormalized
       DO_CHUNK: True
-      CHUNK_LENGTH: 180
+      CHUNK_LENGTH: 700
       CROP_FACE:
         DO_CROP_FACE: false
         BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace
@@ -113,5 +114,5 @@ INFERENCE:
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
   EVALUATION_WINDOW: 
     USE_SMALLER_WINDOW: true        # Change this if you'd like an evaluation window smaller than the test video length
-    WINDOW_SIZE: 10        # In seconds
+    WINDOW_SIZE: 30        # In seconds
   MODEL_PATH:   ""

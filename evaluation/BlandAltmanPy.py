@@ -104,6 +104,7 @@ class BlandAltman():
         self.gold_std = self.rand_jitter(self.gold_std)
         self.new_measure = self.rand_jitter(self.new_measure)
         r2 = r2_score(self.gold_std, self.new_measure)
+        print(r2)
         pearson_corr, _ = pearsonr(self.gold_std, self.new_measure)
 
         fig = plt.figure(figsize=figure_size)
