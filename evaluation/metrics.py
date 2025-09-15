@@ -4,6 +4,7 @@ import torch
 from evaluation.post_process import *
 from tqdm import tqdm
 from evaluation.BlandAltmanPy import BlandAltman
+import os
 
 def read_label(dataset):
     """Read manually corrected labels."""
@@ -50,7 +51,16 @@ def calculate_metrics(predictions, labels, config):
     gt_hr_peak_all = list()
     SNR_all = list()
     MACC_all = list()
+
+    predict_hr_fft_all_per_vid = list()
+    gt_hr_fft_all_per_vid = list()
+    predict_hr_peak_all_per_vid = list()
+    gt_hr_peak_all_per_vid = list()
+    SNR_all_per_vid = list()
+    MACC_all_per_vid = list()
     print("Calculating metrics!")
+    per_video_results = []
+
     # predictions.keys() is the name of the video chunks
     for index in tqdm(predictions.keys(), ncols=80):
         prediction = _reform_data_from_dict(predictions[index])
@@ -94,8 +104,33 @@ def calculate_metrics(predictions, labels, config):
                 predict_hr_fft_all.append(pred_hr_fft)
                 SNR_all.append(SNR)
                 MACC_all.append(macc)
+
+                gt_hr_fft_all_per_vid.append(gt_hr_fft)
+                predict_hr_fft_all_per_vid.append(pred_hr_fft)
+                SNR_all_per_vid.append(SNR)
+                MACC_all_per_vid.append(macc)
             else:
                 raise ValueError("Inference evaluation method name wrong!")
+
+        per_video_results.append({
+            "video_id": index,
+            "avg_gt_hr_fft": np.mean(gt_hr_fft_all_per_vid),
+            "avg_pred_hr_fft": np.mean(predict_hr_fft_all_per_vid),
+            "avg_SNR": np.mean(SNR_all_per_vid),
+            "avg_MACC": np.mean(MACC_all_per_vid),
+        })
+
+        gt_hr_peak_all_per_vid.clear()
+        predict_hr_peak_all_per_vid.clear()
+        gt_hr_fft_all_per_vid.clear()
+        predict_hr_fft_all_per_vid.clear()
+        SNR_all_per_vid.clear()
+        MACC_all_per_vid.clear()
+
+    df = pd.DataFrame(per_video_results)
+    csv_path = os.path.join(config.TEST.OUTPUT_SAVE_DIR, "per_video_metrics.csv")
+    df.to_csv(csv_path, index=False)
+    print(f"[INFO] Saved per-video metrics to: {csv_path}")
     
     # Filename ID to be used in any results files (e.g., Bland-Altman plots) that get saved
     if config.TOOLBOX_MODE == 'train_and_test':

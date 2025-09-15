@@ -151,7 +151,7 @@ class CNNRNNTrainer(BaseTrainer):
         if data_loader["test"] is None:
             raise ValueError("No data for test")
 
-        print("\n===Testing===")
+        print("\n===Loading chunks of testing data===")
         predictions = dict()
         labels = dict()
 
