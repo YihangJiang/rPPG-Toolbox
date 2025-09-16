@@ -48,4 +48,4 @@ INFERENCE:
   EVALUATION_WINDOW:
     USE_SMALLER_WINDOW: true        # Change this if you'd like an evaluation window smaller than the test video length
     WINDOW_SIZE: 10        # In seconds
-  MODEL_PATH:   "/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/runs/exp/UBFC-rPPG_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceFalse_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW72_SizeH72_ClipLength180/PreTrainedModels/UBFC_UBFC_PHYS_cnnrnn_Epoch28.pth"
+  MODEL_PATH:   "/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/runs/exp/UBFC-rPPG_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceFalse_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW72_SizeH72_ClipLength180/PreTrainedModels/UBFC_UBFC_PHYS_cnnrnn_Epoch54.pth"
