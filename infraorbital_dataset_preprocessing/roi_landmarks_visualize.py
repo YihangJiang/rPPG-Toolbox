@@ -13,9 +13,11 @@ area_names = ['Right_eye', 'Left_eye']
 
 
 # %%
-
-vidcap = cv2.VideoCapture('/work/yj167/DATASET_1/s4/vid_s4_T3.avi')
+input_video_path, output_video_path = '/work/yj167/DATASET_1/s1/vid_s1_T1.avi', './plot1.avi'
+vidcap = cv2.VideoCapture(input_video_path)
 success, image = vidcap.read()
+if not success:
+    print("Cannot read the video")
 # %%
 mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils 
@@ -94,11 +96,15 @@ pt_min, pt_max = locate_eye_corner(results, seq_num_list, annotated_image)
 #     plot_landmark(annotated_image, facial_area, results, pt_min, pt_max, False)
 #     cv2.circle(annotated_image, pt_min, 10, (255, 0, 0), -1)
 #     cv2.circle(annotated_image, pt_max, 10, (255, 0, 0), -1)
-plot_rois(results, image, "right malar")
+plot_rois(results, image, "infraorbital")
 # %%
 # masked_image, _ = plot_semi(annotated_image, pt_min, pt_max, False)
-input_video_path, output_video_path = '/work/yj167/DATASET_1/s4/vid_s4_T3.avi', './plot1.avi'
-annotate_video_with_rois(input_video_path, output_video_path, face_mesh, "right malar", (320,320))
+face_mesh = mp_face_mesh.FaceMesh(
+    static_image_mode=True,
+    refine_landmarks=True,
+    max_num_faces=2,
+    min_detection_confidence=0.5)
+annotate_video_with_rois(input_video_path, output_video_path, face_mesh, "infraorbital", (320,320))
 
 # %%
 results = face_detection(image)

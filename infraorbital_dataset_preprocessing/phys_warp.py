@@ -10,19 +10,20 @@ import mediapipe as mp
 from video_utils import *
 
 src_root = "/work/yj167/DATASET_1"
-dst_root = "/work/yj167/DATASET_1ROI"
+dst_root = "/work/yj167/DATASET_1IN"
 
 list_phys1, list_phys2 = get_ubfc_paths(src_root, dst_root)
 
 # %%
 list_phys1 = [
     f for f in list_phys1
-    if int(f.split('/')[4][1:]) > 12 and int(f.split('/')[4][1:]) > 29
+    if int(f.split('/')[4][1:]) < 30
 ]
 
 list_phys2 = [
     f for f in list_phys2
-    if int(f.split('/')[4][1:]) > 12 and int(f.split('/')[4][1:]) > 29
+    if int(f.split('/')[4][1:]) < 30
+
 ]
 
 # %%
@@ -35,6 +36,6 @@ for i in range(len(list_phys1)):
         min_detection_confidence=0.5)
     input_video_path, output_video_path = list_phys1[i], list_phys2[i]
     print(list_phys1[i], list_phys2[i])
-    annotate_video_with_rois(input_video_path, output_video_path, face_mesh, "right malar", (320,320))
+    annotate_video_with_rois(input_video_path, output_video_path, face_mesh, "infraorbital", (320,320))
 
 # %%

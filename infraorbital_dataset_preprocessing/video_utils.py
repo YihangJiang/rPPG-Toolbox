@@ -12,7 +12,6 @@ from scipy.signal import welch
 from scipy.fft import fft
 
 
-
 DESIRED_HEIGHT = 480
 DESIRED_WIDTH = 480
 
@@ -30,6 +29,7 @@ facial_areas = {
     , 'Right_eye_brow': mp_face_mesh.FACEMESH_RIGHT_EYEBROW
     , 'Tesselation': mp_face_mesh.FACEMESH_TESSELATION
 }
+
 
 
 face_mesh = mp_face_mesh.FaceMesh(
@@ -66,7 +66,40 @@ keypoints = [
     [423, 426, 410, 432, 364, 365, 397, 367, 435, 401, 376, 411, 425],
     [18, 83, 182, 194, 32, 140, 176, 148, 152, 377, 400, 369, 262, 418, 406, 313],
     [57, 212, 210, 169, 150, 149, 176, 140, 204, 43],
-    [287, 273, 424, 369, 400, 378, 379, 394, 430, 432]
+    [287, 273, 424, 369, 400, 378, 379, 394, 430, 432],
+    [464, 253, 446, 329, 347]
+]
+
+face_mesh_warped_corners = [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [0,3,6,8],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [0,3,4,2]
 ]
 
 region_names = [
@@ -75,7 +108,7 @@ region_names = [
     "nasal tip", "left lower nasal sidewall", "right lower nasal sidewall", "left mid nasal sidewall",
     "right mid nasal sidewall", "philtrum", "left upper lip", "right upper lip", "left nasolabial fold",
     "right nasolabial fold", "left temporal", "right temporal", "left malar", "right malar",
-    "left lower cheek", "right lower cheek", "chin", "left marionette fold", "right marionette fold"
+    "left lower cheek", "right lower cheek", "chin", "left marionette fold", "right marionette fold", "infraorbital"
 ]
 
 def plot_landmark(img_base, facial_area_name, results, pt_min, pt_max, plot_button):
@@ -118,10 +151,6 @@ def resize_and_show(image):
   plt.imshow(img)
   return img
 
-import cv2
-import numpy as np
-import pandas as pd
-
 def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, region_name=None, output_size=(320, 320)):
     """
     Warps the specified region from each frame and saves a 320x320 video of the warped patches.
@@ -147,9 +176,7 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
         return
     region_idx = region_names.index(region_name)
     region_landmarks = keypoints[region_idx]
-
-    # Landmark indices (counter-clockwise)
-    selected_points = [0, 3, 6, 8]  # [TL, BL, BR, TR]
+    selected_points_in_roi = face_mesh_warped_corners[region_idx]
 
     # Destination square (counter-clockwise)
     pts_dst = np.float32([
@@ -180,7 +207,7 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
                 h, w, _ = frame.shape
 
                 try:
-                    landmark_indices = [region_landmarks[i] for i in selected_points]
+                    landmark_indices = [region_landmarks[i] for i in selected_points_in_roi]
                     pts_src = np.float32([
                         [face_landmarks.landmark[i].x * w, face_landmarks.landmark[i].y * h]
                         for i in landmark_indices
@@ -620,7 +647,6 @@ def segment_one_video(video_path, output_video_path, area_names):
             processed_frames.append(masked_image)
             out.write(masked_image)
             pbar.update(1)
-      
 
     cap.release()
     out.release()
