@@ -24,6 +24,7 @@ class TscanTrainer(BaseTrainer):
         self.max_epoch_num = config.TRAIN.EPOCHS
         self.model_dir = config.MODEL.MODEL_DIR
         self.model_file_name = config.TRAIN.MODEL_FILE_NAME
+        self.model_name = config.MODEL.NAME
         self.batch_size = config.TRAIN.BATCH_SIZE
         self.num_of_gpu = config.NUM_OF_GPU_TRAIN
         self.base_len = self.num_of_gpu * self.frame_depth
@@ -94,7 +95,7 @@ class TscanTrainer(BaseTrainer):
             # Append the mean training loss for the epoch
             mean_training_losses.append(np.mean(train_loss))
 
-            self.save_model(epoch)
+            self.save_model(epoch, 0)
             if not self.config.TEST.USE_LAST_EPOCH: 
                 valid_loss = self.valid(data_loader)
                 mean_valid_losses.append(valid_loss)
@@ -102,6 +103,7 @@ class TscanTrainer(BaseTrainer):
                 if self.min_valid_loss is None:
                     self.min_valid_loss = valid_loss
                     self.best_epoch = epoch
+                    self.save_model(epoch, 1)
                     print("Update best model! Best epoch: {}".format(self.best_epoch))
                 elif (valid_loss < self.min_valid_loss):
                     self.min_valid_loss = valid_loss
@@ -185,9 +187,8 @@ class TscanTrainer(BaseTrainer):
                 labels_test = labels_test[:(N * D) // self.base_len * self.base_len]
                 pred_ppg_test = self.model(data_test)
 
-                if self.config.TEST.OUTPUT_SAVE_DIR:
-                    labels_test = labels_test.cpu()
-                    pred_ppg_test = pred_ppg_test.cpu()
+                labels_test = labels_test.cpu()
+                pred_ppg_test = pred_ppg_test.cpu()
 
                 for idx in range(batch_size):
                     subj_index = test_batch[2][idx]
@@ -203,10 +204,16 @@ class TscanTrainer(BaseTrainer):
         if self.config.TEST.OUTPUT_SAVE_DIR: # saving test outputs
             self.save_test_outputs(predictions, labels, self.config)
 
-    def save_model(self, index):
-        if not os.path.exists(self.model_dir):
-            os.makedirs(self.model_dir)
-        model_path = os.path.join(
-            self.model_dir, self.model_file_name + '_Epoch' + str(index) + '.pth')
-        torch.save(self.model.state_dict(), model_path)
-        print('Saved Model Path: ', model_path)
+    def save_model(self, index, best=0):
+        if best:
+            print('Saved Best Model')
+            torch.save(self.model.state_dict(), os.path.join(self.model_dir, "Best" + '_' + self.model_name + '.pth'))
+        else:
+            if not os.path.exists(self.model_dir):
+                os.makedirs(self.model_dir)
+            model_path = os.path.join(
+                self.model_dir, self.model_file_name + '_Epoch' + str(index) + '.pth')
+            torch.save(self.model.state_dict(), model_path)
+            print('Saved Model Path: ', model_path)
+
+

@@ -19,6 +19,7 @@ _C.BASE = ['']
 _C.TOOLBOX_MODE = ""
 _C.TRAIN = CN()
 _C.TRAIN.EPOCHS = 50
+_C.TRAIN.ROI = ''
 _C.TRAIN.BATCH_SIZE = 4
 _C.TRAIN.EARLY_STOPPING_PATIENCE = 10
 _C.TRAIN.LR = 1e-4
@@ -358,9 +359,9 @@ _C.NUM_OF_GPU_TRAIN = 1
 # Log settings
 # -----------------------------------------------------------------------------
 _C.TRAIN_LOG = CN()
-_C.TRAIN_LOG.PATH = "runs/exp"
 _C.LOG = CN()
-_C.LOG.PATH = "runs/exp"
+_C.LOG.TRAIN_PATH = "runs/exp"
+_C.LOG.TEST_PATH = "runs/exp"
 
 
 def _update_config_from_file(config, cfg_file):
@@ -573,14 +574,14 @@ def update_config(config, args):
 
     # Establish the directory to hold pre-trained models from a given experiment inside 
     # the configured log directory (runs/exp by default)
-    config.MODEL.MODEL_DIR = os.path.join(config.LOG.PATH, config.TRAIN.DATA.EXP_DATA_NAME, config.MODEL.MODEL_DIR)
+    config.MODEL.MODEL_DIR = os.path.join(config.LOG.TRAIN_PATH, config.TRAIN.DATA.EXP_DATA_NAME, config.MODEL.MODEL_DIR)
 
     # Establish the directory to hold outputs saved during testing inside the
     # configured log directory (runs/exp by default)
     if config.TOOLBOX_MODE == 'train_and_test' or config.TOOLBOX_MODE == 'only_test':
-        config.TEST.OUTPUT_SAVE_DIR = os.path.join(config.LOG.PATH, config.TEST.DATA.EXP_DATA_NAME, 'saved_test_outputs')
+        config.TEST.OUTPUT_SAVE_DIR = os.path.join(config.LOG.TEST_PATH, config.TEST.DATA.EXP_DATA_NAME, 'saved_test_outputs')
     elif config.TOOLBOX_MODE == 'unsupervised_method':
-        config.UNSUPERVISED.OUTPUT_SAVE_DIR = os.path.join(config.LOG.PATH, config.UNSUPERVISED.DATA.EXP_DATA_NAME, 'saved_outputs')
+        config.UNSUPERVISED.OUTPUT_SAVE_DIR = os.path.join(config.TEST_PATH, config.UNSUPERVISED.DATA.EXP_DATA_NAME, 'saved_outputs')
     else:
         raise ValueError('TOOLBOX_MODE only supports train_and_test, only_test, or unsupervised_method!')
 

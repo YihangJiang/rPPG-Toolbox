@@ -55,7 +55,7 @@ class BaseTrainer:
 
     def plot_losses_and_lrs(self, train_loss, valid_loss, lrs, config):
 
-        output_dir = os.path.join(config.TRAIN_LOG.PATH, config.TRAIN.DATA.EXP_DATA_NAME, 'plots')
+        output_dir = os.path.join(config.LOG.TRAIN_PATH, config.TRAIN.DATA.EXP_DATA_NAME, 'plots')
         if not os.path.exists(output_dir):
             os.makedirs(output_dir, exist_ok=True)
 

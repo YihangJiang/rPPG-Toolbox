@@ -60,11 +60,18 @@ def calculate_metrics(predictions, labels, config):
     MACC_all_per_vid = list()
     print("Calculating metrics!")
     per_video_results = []
+    chunk_results = []
+
+    pred_ppg_all = []
+    gt_ppg_all = []
 
     # predictions.keys() is the name of the video chunks
     for index in tqdm(predictions.keys(), ncols=80):
         prediction = _reform_data_from_dict(predictions[index])
         label = _reform_data_from_dict(labels[index])
+
+        pred_ppg_all.extend(label.tolist())
+        gt_ppg_all.extend(prediction.tolist())
 
         video_frame_size = prediction.shape[0]
         if config.INFERENCE.EVALUATION_WINDOW.USE_SMALLER_WINDOW:
@@ -73,6 +80,7 @@ def calculate_metrics(predictions, labels, config):
                 window_frame_size = video_frame_size
         else:
             window_frame_size = video_frame_size
+        
 
         for i in range(0, len(prediction), window_frame_size):
             pred_window = prediction[i:i+window_frame_size]
@@ -112,6 +120,15 @@ def calculate_metrics(predictions, labels, config):
             else:
                 raise ValueError("Inference evaluation method name wrong!")
 
+            chunk_results.append({
+                "video_id": index,
+                "chunk_index": i // window_frame_size,
+                "gt_hr": gt_hr_fft,
+                "pred_hr": pred_hr_fft,
+                "SNR": SNR,
+                "MACC": macc
+            })
+
         per_video_results.append({
             "video_id": index,
             "avg_gt_hr_fft": np.mean(gt_hr_fft_all_per_vid),
@@ -127,8 +144,13 @@ def calculate_metrics(predictions, labels, config):
         SNR_all_per_vid.clear()
         MACC_all_per_vid.clear()
 
+    all_chunk_results_df = pd.DataFrame(chunk_results)
+    chunk_csv_path = os.path.join(config.TEST.OUTPUT_SAVE_DIR, config.TRAIN.MODEL_FILE_NAME + "_per_chunk_metrics.csv")
+    all_chunk_results_df.to_csv(chunk_csv_path, index=False)
+    print(f"[INFO] Saved per-chunk metrics to: {chunk_csv_path}")
+
     df = pd.DataFrame(per_video_results)
-    csv_path = os.path.join(config.TEST.OUTPUT_SAVE_DIR, "per_video_metrics.csv")
+    csv_path = os.path.join(config.TEST.OUTPUT_SAVE_DIR, config.TRAIN.MODEL_FILE_NAME + "_per_video_metrics.csv")
     df.to_csv(csv_path, index=False)
     print(f"[INFO] Saved per-video metrics to: {csv_path}")
     
@@ -179,6 +201,7 @@ def calculate_metrics(predictions, labels, config):
                 print("MACC: {0} +/- {1}".format(MACC_avg, standard_error))
             elif "AU" in metric:
                 pass
+            # If BA is in yaml file, the bland altman plot will be saved
             elif "BA" in metric:  
                 compare = BlandAltman(gt_hr_fft_all, predict_hr_fft_all, config, averaged=True)
                 compare.scatter_plot(
