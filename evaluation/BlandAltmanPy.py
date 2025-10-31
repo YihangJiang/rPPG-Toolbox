@@ -54,9 +54,9 @@ class BlandAltman():
 
         # Define save path
         if config.TOOLBOX_MODE == 'train_and_test' or config.TOOLBOX_MODE == 'only_test':
-            self.save_path  = os.path.join(config.LOG.PATH, config.TEST.DATA.EXP_DATA_NAME, 'bland_altman_plots')
+            self.save_path  = os.path.join(config.LOG.TEST_PATH, config.TEST.DATA.EXP_DATA_NAME, 'bland_altman_plots')
         elif config.TOOLBOX_MODE == 'unsupervised_method':
-            self.save_path  = os.path.join(config.LOG.PATH, config.UNSUPERVISED.DATA.EXP_DATA_NAME, 'bland_altman_plots')
+            self.save_path  = os.path.join(config.LOG.TEST_PATH, config.UNSUPERVISED.DATA.EXP_DATA_NAME, 'bland_altman_plots')
         else:
             raise ValueError('TOOLBOX_MODE only supports train_and_test, only_test, or unsupervised_method!')
         

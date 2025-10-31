@@ -1,6 +1,6 @@
 # %%
-%reload_ext autoreload
-%autoreload 2
+# %reload_ext autoreload
+# %autoreload 2
 import types
 from config import get_config
 from dataset import data_loader
@@ -9,7 +9,6 @@ import torch
 import random
 from torch.utils.data import DataLoader
 from neural_methods import trainer
-from neural_methods.trainer import CNNRNNTrainer
 
 RANDOM_SEED = 100
 torch.manual_seed(RANDOM_SEED)

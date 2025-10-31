@@ -5,6 +5,9 @@ from evaluation.post_process import *
 from tqdm import tqdm
 from evaluation.BlandAltmanPy import BlandAltman
 import os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 def read_label(dataset):
     """Read manually corrected labels."""
@@ -41,6 +44,73 @@ def _reform_data_from_dict(data, flatten=True):
         sort_data = np.array(sort_data.cpu())
 
     return sort_data
+
+
+def plot_ppg_signals(predictions, labels, config, filename_id, max_samples=5000):
+    """Plot predicted PPG vs ground truth PPG signals and save to file."""
+    # Define save path - consistent with BlandAltman plot directory structure
+    if config.TOOLBOX_MODE == 'train_and_test' or config.TOOLBOX_MODE == 'only_test':
+        save_path = os.path.join(config.LOG.TEST_PATH, config.TEST.DATA.EXP_DATA_NAME, 'ppg_plots')
+    elif config.TOOLBOX_MODE == 'unsupervised_method':
+        save_path = os.path.join(config.LOG.TEST_PATH, config.UNSUPERVISED.DATA.EXP_DATA_NAME, 'ppg_plots')
+    else:
+        raise ValueError('TOOLBOX_MODE only supports train_and_test, only_test, or unsupervised_method!')
+    
+    # Make the save path, if needed
+    if not os.path.exists(save_path):
+        os.makedirs(save_path, exist_ok=True)
+    
+    print(f"\nGenerating PPG plots for {len(predictions)} videos...")
+    
+    # Iterate through each video (subject)
+    for video_idx, video_id in enumerate(predictions.keys()):
+        # Create a folder for this video
+        video_folder = os.path.join(base_save_path, str(video_id))
+        if not os.path.exists(video_folder):
+            os.makedirs(video_folder, exist_ok=True)
+        
+        # Get all chunks for this video (sorted by chunk index)
+        video_predictions = predictions[video_id]
+        video_labels = labels[video_id]
+        
+        # Sort chunks by their index
+        sorted_chunk_indices = sorted(video_predictions.keys())
+        
+        print(f"  Processing video {video_id} ({video_idx + 1}/{len(predictions)}): {len(sorted_chunk_indices)} chunks")
+        
+        # Plot each chunk
+        for chunk_idx in sorted_chunk_indices:
+            prediction = video_predictions[chunk_idx].cpu().numpy().flatten()
+            label = video_labels[chunk_idx].cpu().numpy().flatten()
+            
+            # Create time axis (in seconds if FS is available)
+            if hasattr(config.TEST.DATA, 'FS') and config.TEST.DATA.FS:
+                time_axis = np.arange(len(prediction)) / config.TEST.DATA.FS
+                x_label = 'Time (seconds)'
+            else:
+                time_axis = np.arange(len(prediction))
+                x_label = 'Sample Index'
+            
+            # Create the plot for this chunk
+            plt.figure(figsize=(15, 6))
+            plt.plot(time_axis, label, label='Ground Truth PPG', alpha=0.7, linewidth=1)
+            plt.plot(time_axis, prediction, label='Predicted PPG', alpha=0.7, linewidth=1)
+            plt.xlabel(x_label, fontsize=12)
+            plt.ylabel('PPG Signal', fontsize=12)
+            plt.title(f'Video {video_id} - Chunk {chunk_idx} - Predicted vs Ground Truth PPG', fontsize=14)
+            plt.legend(fontsize=10)
+            plt.grid(True, alpha=0.3)
+            plt.tight_layout()
+            
+            # Save the plot
+            file_name = f'chunk_{chunk_idx}_PPG_comparison.pdf'
+            save_file = os.path.join(video_folder, file_name)
+            plt.savefig(save_file, bbox_inches='tight', dpi=300)
+            plt.close()
+        
+        print(f"    Saved {len(sorted_chunk_indices)} chunk plots to: {video_folder}")
+    
+    print(f"Completed PPG plotting for all {len(predictions)} videos!")
 
 
 def calculate_metrics(predictions, labels, config):
@@ -144,6 +214,10 @@ def calculate_metrics(predictions, labels, config):
         SNR_all_per_vid.clear()
         MACC_all_per_vid.clear()
 
+    # Ensure the output directory exists before saving CSV files
+    if not os.path.exists(config.TEST.OUTPUT_SAVE_DIR):
+        os.makedirs(config.TEST.OUTPUT_SAVE_DIR, exist_ok=True)
+    
     all_chunk_results_df = pd.DataFrame(chunk_results)
     chunk_csv_path = os.path.join(config.TEST.OUTPUT_SAVE_DIR, config.TRAIN.MODEL_FILE_NAME + "_per_chunk_metrics.csv")
     all_chunk_results_df.to_csv(chunk_csv_path, index=False)
@@ -274,3 +348,7 @@ def calculate_metrics(predictions, labels, config):
                 raise ValueError("Wrong Test Metric Type")
     else:
         raise ValueError("Inference evaluation method name wrong!")
+    
+    # Plot predicted PPG vs ground truth PPG signals
+    print("\nGenerating PPG signal comparison plots...")
+    plot_ppg_signals(predictions, labels, config, filename_id)
