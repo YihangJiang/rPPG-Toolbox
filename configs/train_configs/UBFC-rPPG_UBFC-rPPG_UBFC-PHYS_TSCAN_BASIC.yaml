@@ -75,7 +75,7 @@ TEST:
       TASK_LIST: ['T1', 'T2']
     FS: 35
     DATASET: UBFC-PHYS
-    DO_PREPROCESS: False                    # if first time, should be true
+    DO_PREPROCESS: True                    # if first time, should be true
     DATA_FORMAT: NDCHW
     DATA_PATH: "/work/yj167/DATASET_1"                     # Raw dataset path, need to be updated
     CACHED_PATH: "/work/yj167/DATASET_PRE"    # Processed dataset save path, need to be updated

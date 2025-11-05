@@ -1,8 +1,8 @@
 #!/usr/bin/bash
 
-#SBATCH --job-name=base_IN_test
-#SBATCH --output=base_IN_test.txt
-#SBATCH --error=base_IN_test.err
+#SBATCH --job-name=tscan_IN_testing
+#SBATCH --output=tscan_IN_testing.txt
+#SBATCH --error=tscan_IN_testing.err
 #SBATCH --time=800:00
 #SBATCH --mem=100G
 
@@ -11,7 +11,7 @@
 start_time=$(date "+%Y-%m-%d %H:%M:%S")
 echo "Script started at: $start_time"
 
-python base_IN_test.py >> base_IN_test_output.txt
+python tscan_IN_testing.py >> tscan_IN_testing_output.txt
 
 end_time=$(date "+%Y-%m-%d %H:%M:%S")
 echo "Script ended at: $end_time"
