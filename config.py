@@ -458,6 +458,8 @@ def update_config(config, args):
     # Apply dataset templates BEFORE generating EXP_DATA_NAME
     # This ensures correct values (like CHUNK_LENGTH) are used for folder naming
     apply_dataset_templates(config)
+    # Defrost again since apply_dataset_templates() may have frozen the config
+    config.defrost()
     
     # UPDATE TRAIN PATHS
     if config.TRAIN.DATA.FILE_LIST_PATH == default_TRAIN_FILE_LIST_PATH:

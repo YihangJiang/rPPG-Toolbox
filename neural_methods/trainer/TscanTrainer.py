@@ -199,6 +199,7 @@ class TscanTrainer(BaseTrainer):
 
         print('')
         print("===Testing===")
+        self.chunk_len = self.config.TEST.DATA.PREPROCESS.CHUNK_LENGTH
         predictions = dict()
         labels = dict()
 

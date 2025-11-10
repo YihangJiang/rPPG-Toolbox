@@ -14,7 +14,7 @@ The config file is now TRULY minimal:
     OLD: configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_TSCAN_BASIC.yaml (119 lines)
     NEW: configs/experiments/tscan_ubfc_rppg_to_phys.yaml (40 lines!)
 """
-
+# %%
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -64,7 +64,7 @@ config = get_config(args)
 # to ensure correct EXP_DATA_NAME generation with dataset values
 
 data_loader_dict = dict()
-
+# %%
 # ============================================================================
 # Training Function
 # ============================================================================
@@ -75,7 +75,6 @@ def train(config, data_loader_dict):
     Args:
         config: Configuration object
         data_loader_dict: Dictionary containing train/valid/test data loaders
-        
     Returns:
         model_trainer: Trained model trainer object
     """
