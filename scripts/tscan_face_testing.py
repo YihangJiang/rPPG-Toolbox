@@ -12,7 +12,6 @@ import torch
 import random
 from torch.utils.data import DataLoader
 from neural_methods import trainer
-from neural_methods.trainer import CNNRNNTrainer
 
 RANDOM_SEED = 100
 torch.manual_seed(RANDOM_SEED)
@@ -34,27 +33,24 @@ def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2 ** 32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
-
 # %%
-
 args = types.SimpleNamespace()
-# TSCAN rppg physc
-args.config_file = "/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_TSCAN_IN.yaml"
-# baseline
+args.config_file = "../configs/infer_configs/UBFC-rPPG_UBFC-PHYS_TSCAN_BASIC.yaml"
 config = get_config(args)
 print('Configuration:')
 print(config, end='\n\n')
 data_loader_dict = dict()
 
-def train(config, data_loader_dict):
-    """Trains the model."""
+# %%
+def test(config, data_loader_dict):
+    """Tests the model."""
     if config.MODEL.NAME == "Physnet":
         model_trainer = trainer.PhysnetTrainer.PhysnetTrainer(config, data_loader_dict)
     elif config.MODEL.NAME == "iBVPNet":
-        model_trainer = trainer.iBVPNetTrainer.iBVPNetTrainer(config, data_loader_dict)
+        model_trainer = trainer.iBVPNetTrainer.iBVPNetTrainer(config, data_loader_dict)    
     elif config.MODEL.NAME == "Tscan":
         model_trainer = trainer.TscanTrainer.TscanTrainer(config, data_loader_dict)
-        print("TSCAN called")
+        print("TSCAN tester initialized")
     elif config.MODEL.NAME == "EfficientPhys":
         model_trainer = trainer.EfficientPhysTrainer.EfficientPhysTrainer(config, data_loader_dict)
     elif config.MODEL.NAME == 'DeepPhys':
@@ -65,58 +61,32 @@ def train(config, data_loader_dict):
         model_trainer = trainer.PhysFormerTrainer.PhysFormerTrainer(config, data_loader_dict)
     elif config.MODEL.NAME == 'cnnrnn':
         model_trainer = trainer.CNNRNNTrainer.CNNRNNTrainer(config, data_loader_dict) 
-        print("cnnrnn called")
     else:
-        raise ValueError('Your Model is Not Supported  Yet!')
-    model_trainer.train(data_loader_dict)
-    return model_trainer
-
-train_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
-valid_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
+        raise ValueError('Your Model is Not Supported Yet!')
+    model_trainer.test(data_loader_dict)
+# %%
 test_loader = data_loader.UBFCPHYSLoader.UBFCPHYSLoader
+if config.TEST.DATA.DATASET and config.TEST.DATA.DATA_PATH:
+    print("Test dataset name: " + str(config.TEST.DATA.DATASET) + " -> test_loader (Data Loader)")
+    test_data = test_loader(
+        name="test",
+        data_path=config.TEST.DATA.DATA_PATH,
+        config_data=config.TEST.DATA)
+    data_loader_dict["test"] = DataLoader(
+        dataset=test_data,
+        num_workers=16,
+        batch_size=config.INFERENCE.BATCH_SIZE,
+        shuffle=False,
+        worker_init_fn=seed_worker,
+        generator=general_generator
+    )
+else:
+    data_loader_dict['test'] = None
 # %%
-train_data_loader = train_loader(
-    name="train",
-    data_path=config.TRAIN.DATA.DATA_PATH,
-    config_data=config.TRAIN.DATA)
-data_loader_dict['train'] = DataLoader(
-    dataset=train_data_loader,
-    num_workers=16,
-    batch_size=config.TRAIN.BATCH_SIZE,
-    shuffle=True,
-    worker_init_fn=seed_worker,
-    generator=train_generator
-)
-# %%
-
-valid_data = valid_loader(
-    name="valid",
-    data_path=config.VALID.DATA.DATA_PATH,
-    config_data=config.VALID.DATA)
-data_loader_dict["valid"] = DataLoader(
-    dataset=valid_data,
-    num_workers=16,
-    batch_size=config.TRAIN.BATCH_SIZE,  # batch size for val is the same as train
-    shuffle=False,
-    worker_init_fn=seed_worker,
-    generator=general_generator
-)
+print("Starting TSCAN face testing on UBFC-PHYS dataset...")
+print("=" * 80)
+test(config, data_loader_dict)
+print("=" * 80)
+print("Testing completed!")
 # %%
 
-test_data = test_loader(
-    name="test",
-    data_path=config.TEST.DATA.DATA_PATH,
-    config_data=config.TEST.DATA)
-data_loader_dict["test"] = DataLoader(
-    dataset=test_data,
-    num_workers=16,
-    batch_size=config.INFERENCE.BATCH_SIZE,
-    shuffle=False,
-    worker_init_fn=seed_worker,
-    generator=general_generator
-)
-# %%
-model_trainer = train(config, data_loader_dict)
-# %%
-model_trainer.test(data_loader_dict)
-# %%

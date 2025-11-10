@@ -1,0 +1,31 @@
+# UBFC-rPPG Dataset Configuration
+# ONLY dataset-specific settings (preprocessing, paths, formats)
+# NO experiment-specific settings (BEGIN, END, etc.)
+
+DATA_TEMPLATE:
+  FS: 30
+  DATASET: UBFC-rPPG
+  DO_PREPROCESS: true
+  DATA_FORMAT: NDCHW
+  DATA_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_2"
+  CACHED_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_PRE"
+  EXP_DATA_NAME: ""
+  PREPROCESS:
+    DATA_TYPE: ['DiffNormalized', 'Standardized']
+    DATA_AUG: ['None']
+    LABEL_TYPE: DiffNormalized
+    DO_CHUNK: True
+    CHUNK_LENGTH: 700
+    CROP_FACE:
+      DO_CROP_FACE: True
+      BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace
+      USE_LARGE_FACE_BOX: True
+      LARGE_BOX_COEF: 1.5
+      DETECTION:
+        DO_DYNAMIC_DETECTION: False
+        DYNAMIC_DETECTION_FREQUENCY: 30
+        USE_MEDIAN_FACE_BOX: False
+    RESIZE:
+      H: 72
+      W: 72
+

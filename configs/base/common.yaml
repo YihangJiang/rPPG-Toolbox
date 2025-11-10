@@ -1,0 +1,18 @@
+# Base Common Configuration
+# This file contains settings shared across all experiments
+
+DEVICE: cuda:0
+NUM_OF_GPU_TRAIN: 1
+
+LOG:
+  TRAIN_PATH: train_runs/exp
+  TEST_PATH: test_runs/exp
+
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
+  EVALUATION_WINDOW:
+    USE_SMALLER_WINDOW: False
+    WINDOW_SIZE: 30        # In seconds
+  MODEL_PATH: ""
+

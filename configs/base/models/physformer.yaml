@@ -1,0 +1,7 @@
+# PhysFormer Model Configuration
+BASE: ['../common.yaml']
+
+MODEL:
+  DROP_RATE: 0.2
+  NAME: PhysFormer
+

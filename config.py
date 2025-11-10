@@ -8,6 +8,7 @@
 import os, re
 import yaml
 from yacs.config import CfgNode as CN
+from config_helper import apply_dataset_templates
 
 _C = CN()
 
@@ -379,6 +380,69 @@ def _update_config_from_file(config, cfg_file):
     config.freeze()
 
 
+def _load_dataset_template(config, dataset_name, data_section):
+    """
+    Automatically load dataset template based on dataset name.
+    
+    Args:
+        config: Configuration object
+        dataset_name: Name of the dataset (e.g., 'UBFC-rPPG', 'PURE')
+        data_section: Which section to update ('TRAIN.DATA', 'VALID.DATA', 'TEST.DATA')
+    """
+    if not dataset_name:
+        return
+    
+    # Map dataset names to config file names
+    dataset_file_map = {
+        'UBFC-rPPG': 'ubfc_rppg.yaml',
+        'UBFC-PHYS': 'ubfc_phys.yaml',
+        'PURE': 'pure.yaml',
+        'SCAMPS': 'scamps.yaml',
+        'MMPD': 'mmpd.yaml',
+        'BP4DPlus': 'bp4dplus.yaml',
+        'BP4DPlusBigSmall': 'bp4dplus_bigsmall.yaml',
+        'iBVP': 'ibvp.yaml',
+    }
+    
+    if dataset_name not in dataset_file_map:
+        return  # Unknown dataset, skip auto-loading
+    
+    dataset_file = dataset_file_map[dataset_name]
+    dataset_config_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        'configs', 'base', 'datasets', dataset_file
+    )
+    
+    # Check if dataset config file exists
+    if not os.path.exists(dataset_config_path):
+        return  # Dataset config not found, skip
+    
+    # Load dataset template
+    config.defrost()
+    with open(dataset_config_path, 'r') as f:
+        dataset_yaml = yaml.load(f, Loader=yaml.FullLoader)
+    
+    # Get the DATA_TEMPLATE from the dataset config
+    if 'DATA_TEMPLATE' in dataset_yaml:
+        # Create a temporary config node to merge
+        temp_config = CN()
+        temp_config.merge_from_dict(dataset_yaml['DATA_TEMPLATE'])
+        
+        # Merge into the appropriate section
+        section_parts = data_section.split('.')
+        target = config
+        for part in section_parts[:-1]:
+            if not hasattr(target, part):
+                setattr(target, part, CN())
+            target = getattr(target, part)
+        
+        # Merge the template into the target section
+        target.merge_from_other_cfg(temp_config)
+        print('=> Auto-loaded dataset template for {} from {}'.format(dataset_name, dataset_file))
+    
+    config.freeze()
+
+
 def update_config(config, args):
 
     # store default file list path for checking against later
@@ -390,6 +454,10 @@ def update_config(config, args):
     # update flag from config file
     _update_config_from_file(config, args.config_file)
     config.defrost()
+    
+    # Apply dataset templates BEFORE generating EXP_DATA_NAME
+    # This ensures correct values (like CHUNK_LENGTH) are used for folder naming
+    apply_dataset_templates(config)
     
     # UPDATE TRAIN PATHS
     if config.TRAIN.DATA.FILE_LIST_PATH == default_TRAIN_FILE_LIST_PATH:

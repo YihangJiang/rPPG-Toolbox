@@ -1,0 +1,7 @@
+# DeepPhys Model Configuration
+BASE: ['../common.yaml']
+
+MODEL:
+  DROP_RATE: 0.5
+  NAME: DeepPhys
+

@@ -9,6 +9,7 @@ IEEE Transactions on Affective Computing, 2021.
 import glob
 import os
 import re
+from pathlib import Path
 from multiprocessing import Pool, Process, Value, Array, Manager
 
 import cv2
@@ -17,6 +18,10 @@ from dataset.data_loader.BaseLoader import BaseLoader
 from tqdm import tqdm
 import csv
 import pandas as pd
+
+# Get project root directory
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+FACE_STATS_PATH = PROJECT_ROOT / 'face_stats.csv'
 
 class UBFCPHYSLoader(BaseLoader):
     """The data loader for the UBFC-PHYS dataset."""
@@ -89,7 +94,7 @@ class UBFCPHYSLoader(BaseLoader):
         saved_filename = data_dirs[i]['index']
         task_name = saved_filename[-2:]
 
-        face_stats = pd.read_csv('face_stats.csv', index_col=[0])
+        face_stats = pd.read_csv(str(FACE_STATS_PATH), index_col=[0])
         new_row = [ int(re.search(r"\d+", saved_filename).group()),  # extract subject number from filename
                 self.config_data.DATASET,                  # dataset name from config
                 self.num_no_face_frames,
@@ -98,7 +103,7 @@ class UBFCPHYSLoader(BaseLoader):
             ] 
         if not ((face_stats == new_row).all(axis=1)).any():
             face_stats.loc[len(face_stats)] = new_row
-        face_stats.to_csv('face_stats.csv')
+        face_stats.to_csv(str(FACE_STATS_PATH))
 
         # Read Frames
         frames = self.read_video(

@@ -7,7 +7,7 @@ from collections import OrderedDict
 import numpy as np
 import torch
 import torch.optim as optim
-from evaluation.metrics import calculate_metrics
+from evaluation.metrics import calculate_metrics, plot_ppg_signals_train
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
 from neural_methods.model.TS_CAN import TSCAN
 from neural_methods.trainer.BaseTrainer import BaseTrainer
@@ -96,6 +96,12 @@ class TscanTrainer(BaseTrainer):
             mean_training_losses.append(np.mean(train_loss))
 
             self.save_model(epoch, 0)
+            
+            # Plot training PPG signals at specific epochs (first, last, and every 10th epoch)
+            if epoch == 0 or epoch == self.max_epoch_num - 1 or (epoch > 0 and epoch % 10 == 0):
+                print(f"\n===Plotting Training PPG Signals for Epoch {epoch}===")
+                self.evaluate_and_plot_train(data_loader, epoch)
+            
             if not self.config.TEST.USE_LAST_EPOCH: 
                 valid_loss = self.valid(data_loader)
                 mean_valid_losses.append(valid_loss)
@@ -108,6 +114,7 @@ class TscanTrainer(BaseTrainer):
                 elif (valid_loss < self.min_valid_loss):
                     self.min_valid_loss = valid_loss
                     self.best_epoch = epoch
+                    self.save_model(epoch, 1)
                     print("Update best model! Best epoch: {}".format(self.best_epoch))
         if not self.config.TEST.USE_LAST_EPOCH: 
             print("best trained epoch: {}, min_val_loss: {}".format(self.best_epoch, self.min_valid_loss))
@@ -142,6 +149,48 @@ class TscanTrainer(BaseTrainer):
                 vbar.set_postfix(loss=loss.item())
             valid_loss = np.asarray(valid_loss)
         return np.mean(valid_loss)
+
+    def evaluate_and_plot_train(self, data_loader, epoch):
+        """Evaluate training data and generate PPG plots."""
+        if data_loader["train"] is None:
+            raise ValueError("No data for train")
+
+        print('')
+        print(f"===Evaluating Training Data for Epoch {epoch}===")
+        predictions = dict()
+        labels = dict()
+        self.model.eval()
+        
+        with torch.no_grad():
+            for _, batch in enumerate(tqdm(data_loader["train"], ncols=80)):
+                batch_size = batch[0].shape[0]
+                data, labels_batch = batch[0].to(self.device), batch[1].to(self.device)
+                N, D, C, H, W = data.shape
+                data = data.view(N * D, C, H, W)
+                labels_batch = labels_batch.view(-1, 1)
+                data = data[:(N * D) // self.base_len * self.base_len]
+                labels_batch = labels_batch[:(N * D) // self.base_len * self.base_len]
+                pred_ppg = self.model(data)
+                
+                # Move to CPU for storage
+                labels_batch = labels_batch.cpu()
+                pred_ppg = pred_ppg.cpu()
+                
+                # Store predictions and labels by subject and chunk
+                for idx in range(batch_size):
+                    subj_index = batch[2][idx]
+                    sort_index = int(batch[3][idx])
+                    if subj_index not in predictions.keys():
+                        predictions[subj_index] = dict()
+                        labels[subj_index] = dict()
+                    predictions[subj_index][sort_index] = pred_ppg[idx * self.chunk_len:(idx + 1) * self.chunk_len]
+                    labels[subj_index][sort_index] = labels_batch[idx * self.chunk_len:(idx + 1) * self.chunk_len]
+        
+        # Generate plots for training data
+        print(f"Generating PPG plots for training data at epoch {epoch}...")
+        plot_ppg_signals_train(predictions, labels, self.config, epoch, dataset_name='train')
+        
+        return predictions, labels
 
     def test(self, data_loader):
         """ Model evaluation on the testing dataset."""

@@ -7,6 +7,7 @@ S. Bobbia, R. Macwan, Y. Benezeth, A. Mansouri, J. Dubois, "Unsupervised skin ti
 import glob
 import os
 import re
+from pathlib import Path
 from multiprocessing import Pool, Process, Value, Array, Manager
 import resource
 import cv2
@@ -14,6 +15,10 @@ import numpy as np
 import pandas as pd
 from dataset.data_loader.BaseLoader import BaseLoader
 from tqdm import tqdm
+
+# Get project root directory
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+FACE_STATS_PATH = PROJECT_ROOT / 'face_stats.csv'
 
 
 class UBFCrPPGLoader(BaseLoader):
@@ -70,7 +75,7 @@ class UBFCrPPGLoader(BaseLoader):
         filename = os.path.split(data_dirs[i]['path'])[-1]
         saved_filename = data_dirs[i]['index']
 
-        face_stats = pd.read_csv('face_stats.csv', index_col=[0])
+        face_stats = pd.read_csv(str(FACE_STATS_PATH), index_col=[0])
         new_row = [ int(re.search(r"\d+", saved_filename).group()),  # extract subject number from filename
                 self.config_data.DATASET,                  # dataset name from config
                 self.num_no_face_frames,
@@ -79,12 +84,12 @@ class UBFCrPPGLoader(BaseLoader):
             ] 
         if not ((face_stats == new_row).all(axis=1)).any():
             face_stats.loc[len(face_stats)] = new_row
-        face_stats.to_csv('face_stats.csv')
+        face_stats.to_csv(str(FACE_STATS_PATH))
         # Read Frames
         if 'None' in config_preprocess.DATA_AUG:
             # Utilize dataset-specific function to read video
             frames = self.read_video(
-                os.path.join(data_dirs[i]['path'],"vid.avi"))
+                os.path.join(data_dirs[i]['path'],"vid.avi"), i)  # Pass index for verbose control
         elif 'Motion' in config_preprocess.DATA_AUG:
             # Utilize general function to read video in .npy format
             frames = self.read_npy_video(
@@ -100,16 +105,19 @@ class UBFCrPPGLoader(BaseLoader):
                 os.path.join(data_dirs[i]['path'],"ground_truth.txt"))
             
         frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess)
-        print(frames_clips.shape)
-        print(bvps_clips.shape)
+        # Only print every 10th video
+        if i % 10 == 0:
+            print(f"Processed video {i}: {frames_clips.shape}, {bvps_clips.shape}")
         input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename)
         file_list_dict[i] = input_name_list
 
     @staticmethod
-    def read_video(video_file):
+    def read_video(video_file, video_index=0):
         """Reads a video file, returns frames(T, H, W, 3) """
-        print("start reading " + video_file)
-        print(f"UBFCrPPGLoader: Memory usage: {(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024):.2f} MB")
+        # Only print every 10th video
+        if video_index % 10 == 0:
+            print(f"Reading video {video_index}: {video_file}")
+            print(f"UBFCrPPGLoader: Memory usage: {(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024):.2f} MB")
         VidObj = cv2.VideoCapture(video_file)
         VidObj.set(cv2.CAP_PROP_POS_MSEC, 0)
         success, frame = VidObj.read()

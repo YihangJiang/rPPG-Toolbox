@@ -1,8 +1,13 @@
 # %%
 # %reload_ext autoreload
 # %autoreload 2
-import types
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import get_config
+# %%
+
+import types
 from dataset import data_loader
 import numpy as np
 import torch

@@ -447,7 +447,7 @@ class BaseLoader(Dataset):
         """
 
         clip_num = frames.shape[0] // chunk_length
-        print("CLip_num" + str(clip_num))
+        print(f"  Chunks created: {clip_num} (from {frames.shape[0]} frames, chunk_length={chunk_length})")
         frames_clips = [frames[i * chunk_length:(i + 1) * chunk_length] for i in range(clip_num)]
         bvps_clips = [bvps[i * chunk_length:(i + 1) * chunk_length] for i in range(clip_num)]
         return np.array(frames_clips), np.array(bvps_clips)

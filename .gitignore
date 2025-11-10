@@ -22,3 +22,8 @@ test.yaml
 *.txt
 *.mp4
 *.avi
+
+# Ignore training and testing output directories
+scripts/test_runs/exp/
+scripts/train_runs/exp/
+scripts/PreprocessedData/

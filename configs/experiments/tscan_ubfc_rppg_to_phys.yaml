@@ -1,0 +1,40 @@
+# Experiment: TSCAN model trained on UBFC-rPPG, tested on UBFC-PHYS
+# This replaces: UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_TSCAN_BASIC.yaml
+# 
+# MINIMAL CONFIG: Only experiment-specific settings!
+# All preprocessing, paths, formats auto-load from dataset templates.
+
+BASE: ['../base/models/tscan.yaml']
+
+TOOLBOX_MODE: "train_and_test"
+
+# Training configuration - ONLY experiment-specific settings
+TRAIN:
+  ROI: 'Face'
+  BATCH_SIZE: 4
+  EPOCHS: 30
+  LR: 9e-3
+  MODEL_FILE_NAME: tscan_ubfc_rppg_to_phys
+  PLOT_LOSSES_AND_LR: True
+  DATA:
+    DATASET: UBFC-rPPG  # Dataset name triggers auto-load of all preprocessing/paths
+    BEGIN: 0.0          # Experiment-specific: training split start
+    END: 0.8            # Experiment-specific: training split end
+
+# Validation configuration - ONLY experiment-specific settings
+VALID:
+  DATA:
+    DATASET: UBFC-rPPG  # Same dataset as training
+    BEGIN: 0.8          # Experiment-specific: validation split start
+    END: 1.0            # Experiment-specific: validation split end
+
+# Test configuration - ONLY experiment-specific settings
+TEST:
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA']
+  USE_LAST_EPOCH: false
+  DATA:
+    DATASET: UBFC-PHYS  # Different dataset for cross-dataset testing
+    BEGIN: 0.0          # Experiment-specific: test split start
+    END: 1.0            # Experiment-specific: test split end
+
+

@@ -46,6 +46,69 @@ def _reform_data_from_dict(data, flatten=True):
     return sort_data
 
 
+def plot_ppg_signals_train(predictions, labels, config, epoch, dataset_name='train', max_samples=5000):
+    """Plot predicted PPG vs ground truth PPG signals for training data and save to file."""
+    # Define save path for training plots
+    save_path = os.path.join(config.MODEL.MODEL_DIR, 'ppg_plots', dataset_name, f'epoch_{epoch}')
+    
+    # Make the save path, if needed
+    if not os.path.exists(save_path):
+        os.makedirs(save_path, exist_ok=True)
+    
+    print(f"\nGenerating PPG plots for {dataset_name} data (epoch {epoch}) - {len(predictions)} videos...")
+    
+    # Iterate through each video (subject)
+    for video_idx, video_id in enumerate(predictions.keys()):
+        # Create a folder for this video
+        video_folder = os.path.join(save_path, str(video_id))
+        if not os.path.exists(video_folder):
+            os.makedirs(video_folder, exist_ok=True)
+        
+        # Get all chunks for this video (sorted by chunk index)
+        video_predictions = predictions[video_id]
+        video_labels = labels[video_id]
+        
+        # Sort chunks by their index
+        sorted_chunk_indices = sorted(video_predictions.keys())
+        
+        print(f"  Processing video {video_id} ({video_idx + 1}/{len(predictions)}): {len(sorted_chunk_indices)} chunks")
+        
+        # Plot each chunk (limit to first few chunks to avoid too many plots)
+        max_chunks = min(3, len(sorted_chunk_indices))  # Limit to 3 chunks per video to save time
+        for chunk_idx in sorted_chunk_indices[:max_chunks]:
+            prediction = video_predictions[chunk_idx].cpu().numpy().flatten() if torch.is_tensor(video_predictions[chunk_idx]) else video_predictions[chunk_idx].flatten()
+            label = video_labels[chunk_idx].cpu().numpy().flatten() if torch.is_tensor(video_labels[chunk_idx]) else video_labels[chunk_idx].flatten()
+            
+            # Create time axis (in seconds if FS is available)
+            if hasattr(config.TRAIN.DATA, 'FS') and config.TRAIN.DATA.FS:
+                time_axis = np.arange(len(prediction)) / config.TRAIN.DATA.FS
+                x_label = 'Time (seconds)'
+            else:
+                time_axis = np.arange(len(prediction))
+                x_label = 'Sample Index'
+            
+            # Create the plot for this chunk
+            plt.figure(figsize=(15, 6))
+            plt.plot(time_axis, label, label='Ground Truth PPG', alpha=0.7, linewidth=1)
+            plt.plot(time_axis, prediction, label='Predicted PPG', alpha=0.7, linewidth=1)
+            plt.xlabel(x_label, fontsize=12)
+            plt.ylabel('PPG Signal', fontsize=12)
+            plt.title(f'Epoch {epoch} - {dataset_name} - Video {video_id} - Chunk {chunk_idx} - Predicted vs Ground Truth PPG', fontsize=14)
+            plt.legend(fontsize=10)
+            plt.grid(True, alpha=0.3)
+            plt.tight_layout()
+            
+            # Save the plot
+            file_name = f'chunk_{chunk_idx}_PPG_comparison.pdf'
+            save_file = os.path.join(video_folder, file_name)
+            plt.savefig(save_file, bbox_inches='tight', dpi=300)
+            plt.close()
+        
+        print(f"    Saved {max_chunks} chunk plots to: {video_folder}")
+    
+    print(f"Completed PPG plotting for all {len(predictions)} videos!")
+
+
 def plot_ppg_signals(predictions, labels, config, filename_id, max_samples=5000):
     """Plot predicted PPG vs ground truth PPG signals and save to file."""
     # Define save path - consistent with BlandAltman plot directory structure
@@ -65,7 +128,7 @@ def plot_ppg_signals(predictions, labels, config, filename_id, max_samples=5000)
     # Iterate through each video (subject)
     for video_idx, video_id in enumerate(predictions.keys()):
         # Create a folder for this video
-        video_folder = os.path.join(base_save_path, str(video_id))
+        video_folder = os.path.join(save_path, str(video_id))
         if not os.path.exists(video_folder):
             os.makedirs(video_folder, exist_ok=True)
         

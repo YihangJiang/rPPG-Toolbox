@@ -1,0 +1,9 @@
+# TSCAN Model Configuration
+BASE: ['../common.yaml']
+
+MODEL:
+  DROP_RATE: 0.2
+  NAME: Tscan
+  TSCAN:
+    FRAME_DEPTH: 10
+
