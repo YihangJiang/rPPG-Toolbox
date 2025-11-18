@@ -361,6 +361,7 @@ _C.NUM_OF_GPU_TRAIN = 1
 # -----------------------------------------------------------------------------
 _C.TRAIN_LOG = CN()
 _C.LOG = CN()
+_C.LOG.PATH = ""
 _C.LOG.TRAIN_PATH = "runs/exp"
 _C.LOG.TEST_PATH = "runs/exp"
 
@@ -454,9 +455,18 @@ def update_config(config, args):
     # update flag from config file
     _update_config_from_file(config, args.config_file)
     config.defrost()
-    
+
+    # Support legacy configs that specify LOG.PATH instead of separate TRAIN/TEST paths
+    if hasattr(config.LOG, "PATH") and config.LOG.PATH:
+        base_log_path = config.LOG.PATH
+        if config.LOG.TRAIN_PATH == "runs/exp" or not config.LOG.TRAIN_PATH:
+            config.LOG.TRAIN_PATH = os.path.join(base_log_path, "train_runs", "exp")
+        if config.LOG.TEST_PATH == "runs/exp" or not config.LOG.TEST_PATH:
+            config.LOG.TEST_PATH = os.path.join(base_log_path, "test_runs", "exp")
+
     # Apply dataset templates BEFORE generating EXP_DATA_NAME
     # This ensures correct values (like CHUNK_LENGTH) are used for folder naming
+    # Note: apply_dataset_templates() defrosts the config and does NOT freeze it
     apply_dataset_templates(config)
     # Defrost again since apply_dataset_templates() may have frozen the config
     config.defrost()

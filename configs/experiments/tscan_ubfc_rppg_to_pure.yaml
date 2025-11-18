@@ -1,0 +1,51 @@
+# Experiment: TSCAN model trained on UBFC-rPPG, tested on PURE
+# This replaces: UBFC-rPPG_UBFC-rPPG_PURE_TSCAN_BASIC.yaml
+# 
+# MINIMAL CONFIG: Only experiment-specific settings!
+# All preprocessing, paths, formats auto-load from dataset templates.
+
+BASE: ['../base/models/tscan.yaml']
+
+TOOLBOX_MODE: "train_and_test"
+
+# Training configuration - ONLY experiment-specific settings
+TRAIN:
+  ROI: 'Face'
+  BATCH_SIZE: 4
+  EPOCHS: 30
+  LR: 9e-3
+  MODEL_FILE_NAME: UBFC_UBFC_PURE_tscan
+  PLOT_LOSSES_AND_LR: True
+  DATA:
+    DATASET: UBFC-rPPG  # Dataset name triggers auto-load of all preprocessing/paths
+    DO_PREPROCESS: False  # Override: if first time, should be true
+    BEGIN: 0.0          # Experiment-specific: training split start
+    END: 0.8            # Experiment-specific: training split end
+    PREPROCESS:
+      CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
+
+# Validation configuration - ONLY experiment-specific settings
+VALID:
+  DATA:
+    DATASET: UBFC-rPPG  # Same dataset as training
+    DO_PREPROCESS: True  # Override: if first time, should be true
+    BEGIN: 0.8          # Experiment-specific: validation split start
+    END: 1.0            # Experiment-specific: validation split end
+    PREPROCESS:
+      CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
+
+# Test configuration - ONLY experiment-specific settings
+TEST:
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA']
+  USE_LAST_EPOCH: false
+  DATA:
+    DATASET: PURE  # Different dataset for cross-dataset testing
+    DO_PREPROCESS: true  # Override: if first time, should be true
+    BEGIN: 0.0          # Experiment-specific: test split start
+    END: 1.0            # Experiment-specific: test split end
+
+# Override inference window size if needed (default is 30 seconds from common.yaml)
+INFERENCE:
+  EVALUATION_WINDOW:
+    WINDOW_SIZE: 10        # Override to 10 seconds for this experiment
+

@@ -7,8 +7,8 @@ DATA_TEMPLATE:
   DATASET: PURE
   DO_PREPROCESS: true
   DATA_FORMAT: NDCHW
-  DATA_PATH: "/gscratch/ubicomp/xliu0/data3/mnt/Datasets/PURE/RawData"
-  CACHED_PATH: "/gscratch/ubicomp/xliu0/data3/mnt/Datasets/rppg_toolbox/PreprocessedData"
+  DATA_PATH: "/work/yj167/DATASET_3"
+  CACHED_PATH: "/work/yj167/DATASET_PRE"
   EXP_DATA_NAME: ""
   PREPROCESS:
     DATA_TYPE: ['DiffNormalized', 'Standardized']
