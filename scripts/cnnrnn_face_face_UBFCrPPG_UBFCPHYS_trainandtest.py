@@ -37,9 +37,9 @@ def seed_worker(worker_id):
 # %%
 args = types.SimpleNamespace()
 # TSCAN rppg physc
-# args.config_file = "/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_TSCAN_BASIC.yaml"
+# args.config_file = "../configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_TSCAN_BASIC.yaml"
 # baseline
-args.config_file = "/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_CNNRNN_WARP.yaml"
+args.config_file = "../configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_CNNRNN_WARP.yaml"
 config = get_config(args)
 print('Configuration:')
 print(config, end='\n\n')
