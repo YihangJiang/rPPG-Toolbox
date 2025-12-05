@@ -22,6 +22,7 @@ TRAIN:
     BEGIN: 0.0          # Experiment-specific: training split start
     END: 0.8            # Experiment-specific: training split end
     PREPROCESS:
+      COLOR_CHANNEL: 'G'   # Use single RGB channel for frames: 'R', 'G', or 'B'
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
 
 # Validation configuration - ONLY experiment-specific settings
@@ -32,6 +33,7 @@ VALID:
     BEGIN: 0.8          # Experiment-specific: validation split start
     END: 1.0            # Experiment-specific: validation split end
     PREPROCESS:
+      COLOR_CHANNEL: 'G'   # Must match TRAIN to keep channels consistent
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
 
 # Test configuration - ONLY experiment-specific settings
@@ -43,9 +45,10 @@ TEST:
     DO_PREPROCESS: true  # Override: if first time, should be true
     BEGIN: 0.0          # Experiment-specific: test split start
     END: 1.0            # Experiment-specific: test split end
+    PREPROCESS:
+      COLOR_CHANNEL: 'G'   # Control which RGB channel is used for PURE test videos
 
 # Override inference window size if needed (default is 30 seconds from common.yaml)
 INFERENCE:
   EVALUATION_WINDOW:
     WINDOW_SIZE: 10        # Override to 10 seconds for this experiment
-

@@ -268,6 +268,16 @@ class BaseLoader(Dataset):
             config_preprocess.CROP_FACE.DETECTION.USE_MEDIAN_FACE_BOX,
             config_preprocess.RESIZE.W,
             config_preprocess.RESIZE.H)
+        # Optionally select a single RGB channel for training/testing, if requested
+        # COLOR_CHANNEL can be 'R', 'G', or 'B' and is defined under *.DATA.PREPROCESS in the config.
+        if hasattr(config_preprocess, "COLOR_CHANNEL"):
+            ch = str(config_preprocess.COLOR_CHANNEL).upper()
+            channel_map = {"R": 0, "G": 1, "B": 2}
+            if ch in channel_map:
+                ch_idx = channel_map[ch]
+                # Keep only the selected channel, maintain 4D shape (T, H, W, 1)
+                if frames.ndim == 4 and frames.shape[-1] >= 3:
+                    frames = frames[..., ch_idx:ch_idx + 1]
         # Check data transformation type
         data = list()  # Video data
         for data_type in config_preprocess.DATA_TYPE:

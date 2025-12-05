@@ -264,18 +264,12 @@ def save_analysis_reports(video_stats, df, save_path):
 
 # %%
 """Main analysis pipeline."""
-# Define paths
-base_path = Path(__file__).parent.parent
-results_dir = base_path / "test_runs" / "exp"
+# Define paths - using specific CSV file path
+csv_path = Path("/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/scripts/test_runs/exp/PURE_ClipLength180_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW72_SizeH72/saved_test_outputs/UBFC_UBFC_PURE_tscan_per_chunk_metrics.csv")
 
-# Find the metrics CSV file
-metrics_files = list(results_dir.rglob("*_per_chunk_metrics.csv"))
+if not csv_path.exists():
+    raise FileNotFoundError(f"Could not find metrics file: {csv_path}")
 
-if not metrics_files:
-    raise FileNotFoundError("Could not find _per_chunk_metrics.csv file in test_runs/exp/")
-
-# Use the most recent metrics file
-csv_path = max(metrics_files, key=lambda p: p.stat().st_mtime)
 print(f"Analyzing metrics from: {csv_path}")
 
 # Create analysis output directory

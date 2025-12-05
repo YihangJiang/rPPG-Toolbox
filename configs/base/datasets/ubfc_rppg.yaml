@@ -15,7 +15,7 @@ DATA_TEMPLATE:
     DATA_AUG: ['None']
     LABEL_TYPE: DiffNormalized
     DO_CHUNK: True
-    CHUNK_LENGTH: 700
+    CHUNK_LENGTH: 180
     CROP_FACE:
       DO_CROP_FACE: True
       BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace
