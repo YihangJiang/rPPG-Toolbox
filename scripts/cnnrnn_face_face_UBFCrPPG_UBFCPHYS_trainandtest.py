@@ -12,7 +12,7 @@ import torch
 import random
 from torch.utils.data import DataLoader
 from neural_methods import trainer
-from neural_methods.trainer import CNNRNNTrainer
+from neural_methods.trainer import *
 
 RANDOM_SEED = 100
 torch.manual_seed(RANDOM_SEED)
@@ -39,7 +39,7 @@ args = types.SimpleNamespace()
 # TSCAN rppg physc
 # args.config_file = "../configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_TSCAN_BASIC.yaml"
 # baseline
-args.config_file = "../configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_CNNRNN_WARP.yaml"
+args.config_file = "../configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_CNNRNN_BASIC.yaml"
 config = get_config(args)
 print('Configuration:')
 print(config, end='\n\n')

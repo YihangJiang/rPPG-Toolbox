@@ -449,6 +449,11 @@ def _load_dataset_template(config, dataset_name, data_section):
 
 def update_config(config, args):
 
+    # Check if config file is in train_configs directory
+    # If so, skip apply_dataset_templates to preserve DATA_PATH, but continue with other updates
+    config_file_path = args.config_file
+    skip_dataset_templates = 'train_configs' in config_file_path
+
     # store default file list path for checking against later
     default_TRAIN_FILE_LIST_PATH = config.TRAIN.DATA.FILE_LIST_PATH
     default_VALID_FILE_LIST_PATH = config.VALID.DATA.FILE_LIST_PATH
@@ -470,7 +475,9 @@ def update_config(config, args):
     # Apply dataset templates BEFORE generating EXP_DATA_NAME
     # This ensures correct values (like CHUNK_LENGTH) are used for folder naming
     # Note: apply_dataset_templates() defrosts the config and does NOT freeze it
-    apply_dataset_templates(config)
+    # Skip this when using train_configs to preserve DATA_PATH as specified in YAML
+    if not skip_dataset_templates:
+        apply_dataset_templates(config)
     # Defrost again since apply_dataset_templates() may have frozen the config
     config.defrost()
     

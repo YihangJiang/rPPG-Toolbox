@@ -25,7 +25,6 @@ import pandas as pd
 from torch.utils.data import Dataset
 from tqdm import tqdm
 from retinaface import RetinaFace   # Source code: https://github.com/serengil/retinaface
-from constant import *
 
 
 class BaseLoader(Dataset):
@@ -323,8 +322,10 @@ class BaseLoader(Dataset):
         if backend == "HC":
             # Use OpenCV's Haar Cascade algorithm implementation for face detection
             # This should only utilize the CPU
-            detector = cv2.CascadeClassifier(
-            absolute_path + '/dataset/haarcascade_frontalface_default.xml')
+            # Get project root directory (go up 2 levels from dataset/data_loader/)
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            cascade_path = os.path.join(project_root, 'dataset', 'haarcascade_frontalface_default.xml')
+            detector = cv2.CascadeClassifier(cascade_path)
 
             # Computed face_zone(s) are in the form [x_coord, y_coord, width, height]
             # (x,y) corresponds to the top-left corner of the zone to define using
