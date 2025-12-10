@@ -18,11 +18,14 @@ TRAIN:
   PLOT_LOSSES_AND_LR: True
   DATA:
     DATASET: UBFC-rPPG  # Dataset name triggers auto-load of all preprocessing/paths
-    DO_PREPROCESS: False  # Override: if first time, should be true
+    DO_PREPROCESS: True  # Override: if first time, should be true
     BEGIN: 0.0          # Experiment-specific: training split start
     END: 0.8            # Experiment-specific: training split end
     PREPROCESS:
-      COLOR_CHANNEL: 'G'   # Use single RGB channel for frames: 'R', 'G', or 'B'
+      COLOR_CHANNEL: 'R'   # Use single RGB channel (Green) - model modified to accept 1 channel per branch
+      # With DATA_TYPE: ['DiffNormalized', 'Standardized'], produces 2 channels total
+      # Channel 0: DiffNormalized(G) for motion branch
+      # Channel 1: Standardized(G) for appearance branch
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
 
 # Validation configuration - ONLY experiment-specific settings
@@ -33,7 +36,7 @@ VALID:
     BEGIN: 0.8          # Experiment-specific: validation split start
     END: 1.0            # Experiment-specific: validation split end
     PREPROCESS:
-      COLOR_CHANNEL: 'G'   # Must match TRAIN to keep channels consistent
+      COLOR_CHANNEL: 'R'   # Use single RGB channel (Green) - must match TRAIN
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
 
 # Test configuration - ONLY experiment-specific settings
@@ -46,7 +49,7 @@ TEST:
     BEGIN: 0.0          # Experiment-specific: test split start
     END: 1.0            # Experiment-specific: test split end
     PREPROCESS:
-      COLOR_CHANNEL: 'G'   # Control which RGB channel is used for PURE test videos
+      COLOR_CHANNEL: 'R'   # Use single RGB channel (Green) - must match TRAIN
 
 # Override inference window size if needed (default is 30 seconds from common.yaml)
 INFERENCE:

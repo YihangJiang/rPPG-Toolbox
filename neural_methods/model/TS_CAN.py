@@ -116,8 +116,11 @@ class TSCAN(nn.Module):
         self.final_dense_2 = nn.Linear(self.nb_dense, 1, bias=True)
 
     def forward(self, inputs, params=None):
-        diff_input = inputs[:, :3, :, :]
-        raw_input = inputs[:, 3:, :, :]
+        # Split input channels: first half for diff (motion branch), second half for raw (appearance branch)
+        # This allows flexible channel counts: 2 channels (1 RGB × 2 transforms) or 6 channels (3 RGB × 2 transforms)
+        num_channels_per_branch = inputs.shape[1] // 2
+        diff_input = inputs[:, :num_channels_per_branch, :, :]
+        raw_input = inputs[:, num_channels_per_branch:, :, :]
 
         diff_input = self.TSM_1(diff_input)
         d1 = torch.tanh(self.motion_conv1(diff_input))

@@ -148,6 +148,9 @@ class CNNRNNTrainer(BaseTrainer):
         return np.mean(valid_loss)
 
     def test(self, data_loader):
+        # Change chunk length to be test chunk length
+        self.chunk_len = self.config.TEST.DATA.PREPROCESS.CHUNK_LENGTH
+        
         if data_loader["test"] is None:
             raise ValueError("No data for test")
 

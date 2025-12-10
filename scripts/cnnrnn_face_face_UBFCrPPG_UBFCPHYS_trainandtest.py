@@ -2,8 +2,8 @@
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-# %reload_ext autoreload
-# %autoreload 2
+%reload_ext autoreload
+%autoreload 2
 import types
 from config import get_config
 from dataset import data_loader
@@ -13,6 +13,7 @@ import random
 from torch.utils.data import DataLoader
 from neural_methods import trainer
 from neural_methods.trainer import *
+from datetime import datetime
 
 RANDOM_SEED = 100
 torch.manual_seed(RANDOM_SEED)
@@ -38,12 +39,17 @@ def seed_worker(worker_id):
 args = types.SimpleNamespace()
 # TSCAN rppg physc
 # args.config_file = "../configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_TSCAN_BASIC.yaml"
-# baseline
-args.config_file = "../configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_CNNRNN_BASIC.yaml"
+# baseline (switched to experiments config)
+args.config_file = "../configs/experiments/cnnrnn_ubfc_rppg_to_phys.yaml"
 config = get_config(args)
 print('Configuration:')
 print(config, end='\n\n')
 data_loader_dict = dict()
+
+# Record start time
+start_time = datetime.now()
+print(f"Script started at: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+print("=" * 80)
 
 # %%
 def train(config, data_loader_dict):
@@ -121,4 +127,14 @@ model_trainer = train(config, data_loader_dict)
 # %%
 model_trainer.test(data_loader_dict)
 # %%
+
+# Record end time and calculate duration
+end_time = datetime.now()
+duration = end_time - start_time
+print("=" * 80)
+print(f"Script ended at: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+print(f"Total execution time: {duration}")
+print(f"Total execution time (hours): {duration.total_seconds() / 3600:.2f}")
+print(f"Total execution time (minutes): {duration.total_seconds() / 60:.2f}")
+print("=" * 80)
 

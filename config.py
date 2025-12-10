@@ -450,7 +450,8 @@ def _load_dataset_template(config, dataset_name, data_section):
 def update_config(config, args):
 
     # Check if config file is in train_configs directory
-    # If so, skip apply_dataset_templates to preserve DATA_PATH, but continue with other updates
+    # train_configs: skip apply_dataset_templates (full configs with all settings)
+    # experiments: allow apply_dataset_templates (minimal configs, but preserve explicit paths)
     config_file_path = args.config_file
     skip_dataset_templates = 'train_configs' in config_file_path
 

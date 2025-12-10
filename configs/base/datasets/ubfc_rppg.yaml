@@ -7,8 +7,8 @@ DATA_TEMPLATE:
   DATASET: UBFC-rPPG
   DO_PREPROCESS: true
   DATA_FORMAT: NDCHW
-  DATA_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_2"
-  CACHED_PATH: "/hpc/group/dunnlab/rppg_data/data/DATASET_PRE"
+  DATA_PATH: "/mnt/nvme2/rppg_data/DATASET_2"
+  CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE/"
   EXP_DATA_NAME: ""
   PREPROCESS:
     DATA_TYPE: ['DiffNormalized', 'Standardized']
