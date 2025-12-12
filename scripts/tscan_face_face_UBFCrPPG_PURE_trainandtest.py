@@ -44,6 +44,16 @@ args.config_file = "../configs/experiments/tscan_ubfc_rppg_to_pure.yaml"
 config = get_config(args)
 print('Configuration:')
 print(config, end='\n\n')
+
+# Print chunk lengths
+print("=" * 80)
+print("CHUNK LENGTHS:")
+print(f"  TRAIN CHUNK_LENGTH: {config.TRAIN.DATA.PREPROCESS.CHUNK_LENGTH}")
+print(f"  VALID CHUNK_LENGTH: {config.VALID.DATA.PREPROCESS.CHUNK_LENGTH}")
+print(f"  TEST CHUNK_LENGTH:  {config.TEST.DATA.PREPROCESS.CHUNK_LENGTH}")
+print("=" * 80)
+print()
+
 data_loader_dict = dict()
 
 def train(config, data_loader_dict):
