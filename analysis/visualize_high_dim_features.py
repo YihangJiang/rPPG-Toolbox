@@ -18,6 +18,7 @@ import os
 import cv2
 from pathlib import Path
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 import seaborn as sns
 from scipy import signal, stats
 from scipy.fft import fft, fftfreq
@@ -466,23 +467,71 @@ chunk_info = []
 # Build a lookup for metrics by (video_id, chunk_index)
 metrics_lookup = {}
 if metrics_df is not None:
+    print(f"\nBuilding metrics lookup from CSV...")
+    print(f"  CSV columns: {list(metrics_df.columns)}")
+    print(f"  CSV shape: {metrics_df.shape}")
+    
+    # Check for required columns
+    required_cols = ['video_id', 'chunk_index']
+    missing_cols = [col for col in required_cols if col not in metrics_df.columns]
+    if missing_cols:
+        print(f"  WARNING: Missing required columns: {missing_cols}")
+        print(f"  Available columns: {list(metrics_df.columns)}")
+    
+    def normalize_video_id(video_id):
+        """Normalize video_id to match pickle format.
+        
+        Handles cases where CSV has '1001.0' but pickle has '1001'
+        """
+        # Convert to string and remove trailing '.0' if present
+        vid_str = str(video_id)
+        # Remove trailing .0 if it's a float representation
+        if vid_str.endswith('.0'):
+            vid_str = vid_str[:-2]
+        return vid_str
+    
     for idx, row in metrics_df.iterrows():
-        key = (str(row['video_id']), int(row['chunk_index']))
-        metrics_lookup[key] = {
-            'SNR': row.get('SNR', np.nan),
-            'MACC': row.get('MACC', np.nan),
-            'gt_hr': row.get('gt_hr', np.nan),
-            'pred_hr': row.get('pred_hr', np.nan),
-        }
+        try:
+            # Normalize video_id to handle float->string conversion (e.g., '1001.0' -> '1001')
+            video_id_normalized = normalize_video_id(row['video_id'])
+            key = (video_id_normalized, int(row['chunk_index']))
+            metrics_lookup[key] = {
+                'SNR': row.get('SNR', np.nan),
+                'MACC': row.get('MACC', np.nan),
+                'gt_hr': row.get('gt_hr', np.nan),
+                'pred_hr': row.get('pred_hr', np.nan),
+            }
+        except Exception as e:
+            print(f"  Error processing row {idx}: {e}")
+            print(f"    Row data: {row.to_dict()}")
+    
+    print(f"  Built lookup with {len(metrics_lookup)} entries")
+    if len(metrics_lookup) > 0:
+        sample_keys = list(metrics_lookup.keys())[:5]
+        print(f"  Sample keys (after normalization): {sample_keys}")
+else:
+    print(f"\nWARNING: metrics_df is None - no metrics CSV found!")
 
 # Process all chunks from the pickle file (not just those in metrics CSV)
-print(f"Processing all chunks from pickle file...")
+print(f"\nProcessing all chunks from pickle file...")
 total_chunks = sum(len(chunks) for chunks in labels.values())
 print(f"Total chunks to process: {total_chunks}")
+
+# Debug: Print sample video_id and chunk_idx from pickle
+sample_video_ids = list(labels.keys())[:3]
+print(f"Sample video_ids from pickle: {sample_video_ids}")
+for vid_id in sample_video_ids:
+    sample_chunks = list(labels[vid_id].keys())[:3]
+    print(f"  Video {vid_id}: chunk indices {sample_chunks} (total: {len(labels[vid_id])} chunks)")
 
 # Limit to first N chunks for faster processing (remove limit for full analysis)
 max_chunks = None  # Set to None for all chunks, or a number like 100 for testing
 chunk_count = 0
+
+# Track metrics matching
+metrics_found_count = 0
+metrics_not_found_count = 0
+sample_not_found_keys = []
 
 with tqdm(total=min(max_chunks, total_chunks) if max_chunks else total_chunks, desc="Processing chunks") as pbar:
     for video_id in labels.keys():
@@ -517,6 +566,7 @@ with tqdm(total=min(max_chunks, total_chunks) if max_chunks else total_chunks, d
             key = (video_id_str, chunk_idx_int)
             if key in metrics_lookup:
                 metrics = metrics_lookup[key]
+                metrics_found_count += 1
             else:
                 # If metrics not found, use NaN
                 metrics = {
@@ -525,6 +575,20 @@ with tqdm(total=min(max_chunks, total_chunks) if max_chunks else total_chunks, d
                     'gt_hr': np.nan,
                     'pred_hr': np.nan,
                 }
+                metrics_not_found_count += 1
+                if len(sample_not_found_keys) < 5:
+                    sample_not_found_keys.append(key)
+            
+            # Calculate HR difference (predicted - ground truth)
+            # Positive = overestimation, Negative = underestimation
+            gt_hr_val = metrics['gt_hr']
+            pred_hr_val = metrics['pred_hr']
+            if not (np.isnan(gt_hr_val) or np.isnan(pred_hr_val)):
+                hr_diff = pred_hr_val - gt_hr_val
+                hr_abs_diff = np.abs(hr_diff)
+            else:
+                hr_diff = np.nan
+                hr_abs_diff = np.nan
             
             # Store chunk info
             chunk_info.append({
@@ -534,6 +598,8 @@ with tqdm(total=min(max_chunks, total_chunks) if max_chunks else total_chunks, d
                 'MACC': metrics['MACC'],
                 'gt_hr': metrics['gt_hr'],
                 'pred_hr': metrics['pred_hr'],
+                'hr_diff': hr_diff,  # pred_hr - gt_hr (signed difference)
+                'hr_abs_diff': hr_abs_diff,  # |pred_hr - gt_hr| (absolute error)
             })
             
             chunk_count += 1
@@ -541,6 +607,19 @@ with tqdm(total=min(max_chunks, total_chunks) if max_chunks else total_chunks, d
         
         if max_chunks and chunk_count >= max_chunks:
             break
+
+# Print metrics matching summary
+print(f"\n{'='*60}")
+print(f"Metrics Matching Summary:")
+print(f"  Metrics found: {metrics_found_count}/{chunk_count} chunks ({100*metrics_found_count/max(chunk_count,1):.1f}%)")
+print(f"  Metrics NOT found: {metrics_not_found_count}/{chunk_count} chunks ({100*metrics_not_found_count/max(chunk_count,1):.1f}%)")
+if sample_not_found_keys:
+    print(f"  Sample keys NOT found in metrics CSV: {sample_not_found_keys}")
+    if len(metrics_lookup) > 0:
+        sample_found_keys = list(metrics_lookup.keys())[:3]
+        print(f"  Sample keys FOUND in metrics CSV: {sample_found_keys}")
+        print(f"  NOTE: Check if video_id/chunk_index formats match between pickle and CSV!")
+print(f"{'='*60}")
 
 # Convert to DataFrames
 print("\nConverting to DataFrames...")
@@ -564,7 +643,21 @@ info_df = pd.DataFrame(chunk_info)
 
 print(f"  Signal DF shape: {signal_df.shape}, columns: {list(signal_df.columns)[:5]}...")
 print(f"  Video DF shape: {video_df.shape}, columns: {list(video_df.columns)[:5] if len(video_df.columns) > 0 else 'None'}...")
+print(f"  Info DF shape: {info_df.shape}, columns: {list(info_df.columns)}")
 
+# Check for NaN values in info_df
+metric_cols = ['SNR', 'MACC', 'gt_hr', 'pred_hr', 'hr_diff', 'hr_abs_diff']
+for col in metric_cols:
+    if col in info_df.columns:
+        nan_count = info_df[col].isna().sum()
+        total_count = len(info_df)
+        if nan_count == total_count:
+            print(f"  WARNING: Column '{col}' is ALL NaN ({nan_count}/{total_count})")
+        elif nan_count > 0:
+            print(f"  WARNING: Column '{col}' has {nan_count}/{total_count} NaN values")
+        else:
+            print(f"  OK: Column '{col}' has no NaN values")
+# %%
 # Combine all features - handle case where video features might be empty
 if len(video_df.columns) > 0:
     feature_df = pd.concat([signal_df, video_df], axis=1)
@@ -577,7 +670,7 @@ feature_df = pd.concat([info_df, feature_df], axis=1)
 print(f"  Combined feature DF shape: {feature_df.shape}")
 
 # Remove rows with all NaN features
-non_meta_cols = [col for col in feature_df.columns if col not in ['video_id', 'chunk_index', 'SNR', 'MACC', 'gt_hr', 'pred_hr']]
+non_meta_cols = [col for col in feature_df.columns if col not in ['video_id', 'chunk_index', 'SNR', 'MACC', 'gt_hr', 'pred_hr', 'hr_diff', 'hr_abs_diff']]
 feature_df = feature_df.dropna(how='all', subset=non_meta_cols)
 
 print(f"\nExtracted features from {len(feature_df)} chunks")
@@ -590,7 +683,7 @@ if len(feature_df) == 0:
 
 # Prepare features for dimensionality reduction
 feature_cols = [col for col in feature_df.columns 
-                if col not in ['video_id', 'chunk_index', 'SNR', 'MACC', 'gt_hr', 'pred_hr']]
+                if col not in ['video_id', 'chunk_index', 'SNR', 'MACC', 'gt_hr', 'pred_hr', 'hr_diff', 'hr_abs_diff']]
 
 if len(feature_cols) == 0:
     raise ValueError("No feature columns found! Check that feature extraction is working correctly.")
@@ -643,7 +736,20 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 # Compute performance metric for coloring
-performance_metric = feature_df['SNR'].values  # Use SNR as performance metric
+# Options: 'SNR' (higher is better), 'hr_abs_diff' (lower is better), 'MACC' (higher is better)
+performance_metric_name = 'SNR'  # Change to 'hr_abs_diff' or 'MACC' to use different metric
+
+if performance_metric_name == 'hr_abs_diff':
+    # For hr_abs_diff, invert so lower error = better (higher value in visualization)
+    performance_metric = -feature_df['hr_abs_diff'].values  # Negative so lower error = better
+    performance_metric_label = 'HR Absolute Error (inverted)'
+elif performance_metric_name == 'MACC':
+    performance_metric = feature_df['MACC'].values
+    performance_metric_label = 'MACC'
+else:  # Default: SNR
+    performance_metric = feature_df['SNR'].values
+    performance_metric_label = 'SNR'
+
 performance_metric = np.nan_to_num(performance_metric, nan=0.0)
 
 # Dimensionality reduction
@@ -686,7 +792,7 @@ axes[0].set_title(f'PCA Visualization (Explained Variance: {pca.explained_varian
 axes[0].set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.2%})')
 axes[0].set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.2%})')
 axes[0].grid(True, alpha=0.3)
-plt.colorbar(scatter, ax=axes[0], label='SNR')
+plt.colorbar(scatter, ax=axes[0], label=performance_metric_label)
 
 # t-SNE plot
 scatter = axes[1].scatter(X_tsne[:, 0], X_tsne[:, 1], c=performance_metric,
@@ -695,7 +801,7 @@ axes[1].set_title('t-SNE Visualization')
 axes[1].set_xlabel('t-SNE 1')
 axes[1].set_ylabel('t-SNE 2')
 axes[1].grid(True, alpha=0.3)
-plt.colorbar(scatter, ax=axes[1], label='SNR')
+plt.colorbar(scatter, ax=axes[1], label=performance_metric_label)
 
 # UMAP plot (if available)
 if HAS_UMAP:
@@ -705,7 +811,7 @@ if HAS_UMAP:
     axes[2].set_xlabel('UMAP 1')
     axes[2].set_ylabel('UMAP 2')
     axes[2].grid(True, alpha=0.3)
-    plt.colorbar(scatter, ax=axes[2], label='SNR')
+    plt.colorbar(scatter, ax=axes[2], label=performance_metric_label)
 
 # Feature correlation with performance
 axes_idx = 3 if HAS_UMAP else 1
@@ -729,23 +835,73 @@ top_feat_corrs = [f[1] for f in top_features]
 
 y_pos = np.arange(len(top_feat_names))
 colors = ['red' if c < 0 else 'green' for c in top_feat_corrs]
-axes[axes_idx].barh(y_pos, top_feat_corrs, color=colors, alpha=0.7)
+bars = axes[axes_idx].barh(y_pos, top_feat_corrs, color=colors, alpha=0.7)
 axes[axes_idx].set_yticks(y_pos)
-axes[axes_idx].set_yticklabels(top_feat_names, fontsize=8)
-axes[axes_idx].set_xlabel('Correlation with SNR')
-axes[axes_idx].set_title('Top 15 Features Correlated with Performance (SNR)')
+axes[axes_idx].set_yticklabels(top_feat_names, fontsize=10, ha='right')
+axes[axes_idx].set_xlabel(f'Correlation with {performance_metric_label}', fontsize=11)
+axes[axes_idx].set_title(f'Top 15 Features Correlated with Performance ({performance_metric_label})', fontsize=12, fontweight='bold')
 axes[axes_idx].grid(True, alpha=0.3, axis='x')
 axes[axes_idx].axvline(x=0, color='black', linestyle='--', linewidth=0.5)
+
+# Add value labels on bars
+for i, (bar, corr_val) in enumerate(zip(bars, top_feat_corrs)):
+    width = bar.get_width()
+    label_x = width + (0.02 if width >= 0 else -0.02)
+    axes[axes_idx].text(label_x, bar.get_y() + bar.get_height()/2, 
+                       f'{corr_val:.3f}', 
+                       ha='left' if width >= 0 else 'right', 
+                       va='center', fontsize=9)
 
 plt.tight_layout()
 plt.savefig(os.path.join(output_dir, "feature_visualization.png"), dpi=300, bbox_inches='tight')
 print(f"Saved visualization to {os.path.join(output_dir, 'feature_visualization.png')}")
 
 # Save correlation analysis
-corr_df = pd.DataFrame(list(correlations.items()), columns=['feature', 'correlation_with_SNR'])
-corr_df = corr_df.sort_values('correlation_with_SNR', key=abs, ascending=False)
-corr_df.to_csv(os.path.join(output_dir, "feature_correlations.csv"), index=False)
-print(f"Saved correlations to {os.path.join(output_dir, 'feature_correlations.csv')}")
+corr_col_name = f'correlation_with_{performance_metric_name}'
+corr_df = pd.DataFrame(list(correlations.items()), columns=['feature', corr_col_name])
+corr_df = corr_df.sort_values(corr_col_name, key=abs, ascending=False)
+corr_filename = f"feature_correlations_with_{performance_metric_name}.csv"
+corr_df.to_csv(os.path.join(output_dir, corr_filename), index=False)
+print(f"Saved correlations to {os.path.join(output_dir, corr_filename)}")
+
+# Create a dedicated larger plot for SNR feature correlations
+print("\nCreating dedicated feature correlation plot for SNR...")
+fig, ax = plt.subplots(1, 1, figsize=(12, 10))
+top_n = 20  # Show top 20 features
+top_features_snr_large = sorted(correlations.items(), key=lambda x: abs(x[1]), reverse=True)[:top_n]
+top_feat_names_snr_large = [f[0] for f in top_features_snr_large]
+top_feat_corrs_snr_large = [f[1] for f in top_features_snr_large]
+
+y_pos = np.arange(len(top_feat_names_snr_large))
+colors = ['red' if c < 0 else 'green' for c in top_feat_corrs_snr_large]
+bars = ax.barh(y_pos, top_feat_corrs_snr_large, color=colors, alpha=0.7, edgecolor='black', linewidth=0.5)
+ax.set_yticks(y_pos)
+ax.set_yticklabels(top_feat_names_snr_large, fontsize=12, ha='right')
+ax.set_xlabel(f'Correlation with {performance_metric_label}', fontsize=14, fontweight='bold')
+ax.set_title(f'Top {top_n} Features Correlated with {performance_metric_label}', fontsize=16, fontweight='bold', pad=20)
+ax.grid(True, alpha=0.3, axis='x')
+ax.axvline(x=0, color='black', linestyle='--', linewidth=1)
+
+# Add value labels on bars
+for i, (bar, corr_val) in enumerate(zip(bars, top_feat_corrs_snr_large)):
+    width = bar.get_width()
+    label_x = width + (0.01 if width >= 0 else -0.01)
+    ax.text(label_x, bar.get_y() + bar.get_height()/2, 
+           f'{corr_val:.3f}', 
+           ha='left' if width >= 0 else 'right', 
+           va='center', fontsize=11, fontweight='bold')
+
+# Add legend
+legend_elements = [
+    Patch(facecolor='green', alpha=0.7, label='Positive correlation (better performance)'),
+    Patch(facecolor='red', alpha=0.7, label='Negative correlation (worse performance)')
+]
+ax.legend(handles=legend_elements, loc='lower right', fontsize=11)
+
+plt.tight_layout()
+plt.savefig(os.path.join(output_dir, f"feature_correlations_{performance_metric_name}_detailed.png"), dpi=300, bbox_inches='tight')
+print(f"Saved detailed {performance_metric_name} correlation plot to {os.path.join(output_dir, f'feature_correlations_{performance_metric_name}_detailed.png')}")
+plt.close()
 
 # Separate visualizations for signal and video features
 print("\nCreating separate visualizations for signal and video features...")
@@ -767,7 +923,7 @@ if signal_cols:
     ax.set_xlabel(f'PC1 ({pca_signal.explained_variance_ratio_[0]:.2%})')
     ax.set_ylabel(f'PC2 ({pca_signal.explained_variance_ratio_[1]:.2%})')
     ax.grid(True, alpha=0.3)
-    plt.colorbar(scatter, ax=ax, label='SNR')
+    plt.colorbar(scatter, ax=ax, label=performance_metric_label)
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "signal_features_pca.png"), dpi=300, bbox_inches='tight')
     print(f"Saved signal features visualization")
@@ -789,10 +945,238 @@ if video_cols:
     ax.set_xlabel(f'PC1 ({pca_video.explained_variance_ratio_[0]:.2%})')
     ax.set_ylabel(f'PC2 ({pca_video.explained_variance_ratio_[1]:.2%})')
     ax.grid(True, alpha=0.3)
-    plt.colorbar(scatter, ax=ax, label='SNR')
+    plt.colorbar(scatter, ax=ax, label=performance_metric_label)
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "video_features_pca.png"), dpi=300, bbox_inches='tight')
     print(f"Saved video features visualization")
+
+# ============================================================================
+# Create second set of visualizations using HR Absolute Error as performance metric
+# ============================================================================
+print("\n" + "="*80)
+print("Creating visualizations colored by HR Absolute Error...")
+print("="*80)
+
+# Compute HR absolute error as performance metric (lower is better)
+# Invert for visualization so lower error = higher value (better)
+hr_error_metric = feature_df['hr_abs_diff'].values  # Negative so lower error = better
+hr_error_metric = np.nan_to_num(hr_error_metric, nan=0.0)
+hr_error_label = 'HR Absolute Error (inverted, lower is better)'
+
+# Visualization with HR error
+print("\nCreating HR error-based visualizations...")
+
+fig, axes = plt.subplots(2, 2 if HAS_UMAP else 1, figsize=(16, 12) if HAS_UMAP else (16, 8))
+if not HAS_UMAP:
+    axes = [axes]
+else:
+    axes = axes.flatten()
+
+# PCA plot
+scatter = axes[0].scatter(X_pca[:, 0], X_pca[:, 1], c=hr_error_metric, 
+                            cmap='RdYlGn_r', s=50, alpha=0.6, edgecolors='black', linewidths=0.5)
+axes[0].set_title(f'PCA Visualization - HR Error (Explained Variance: {pca.explained_variance_ratio_.sum():.2%})')
+axes[0].set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.2%})')
+axes[0].set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.2%})')
+axes[0].grid(True, alpha=0.3)
+plt.colorbar(scatter, ax=axes[0], label=hr_error_label)
+
+# t-SNE plot
+scatter = axes[1].scatter(X_tsne[:, 0], X_tsne[:, 1], c=hr_error_metric,
+                            cmap='RdYlGn_r', s=50, alpha=0.6, edgecolors='black', linewidths=0.5)
+axes[1].set_title('t-SNE Visualization - HR Error')
+axes[1].set_xlabel('t-SNE 1')
+axes[1].set_ylabel('t-SNE 2')
+axes[1].grid(True, alpha=0.3)
+plt.colorbar(scatter, ax=axes[1], label=hr_error_label)
+
+# UMAP plot (if available)
+if HAS_UMAP:
+    scatter = axes[2].scatter(X_umap[:, 0], X_umap[:, 1], c=hr_error_metric,
+                                cmap='RdYlGn_r', s=50, alpha=0.6, edgecolors='black', linewidths=0.5)
+    axes[2].set_title('UMAP Visualization - HR Error')
+    axes[2].set_xlabel('UMAP 1')
+    axes[2].set_ylabel('UMAP 2')
+    axes[2].grid(True, alpha=0.3)
+    plt.colorbar(scatter, ax=axes[2], label=hr_error_label)
+
+# Feature correlation with HR error
+axes_idx = 3 if HAS_UMAP else 1
+if HAS_UMAP:
+    axes[axes_idx].axis('off')
+    axes_idx = 3
+else:
+    axes_idx = 1
+
+# Top correlated features with HR error
+correlations_hr = {}
+for col in feature_cols:
+    if col in feature_df.columns:
+        corr = np.corrcoef(feature_df[col].fillna(0), hr_error_metric)[0, 1]
+        if not np.isnan(corr):
+            correlations_hr[col] = corr
+
+top_features_hr = sorted(correlations_hr.items(), key=lambda x: abs(x[1]), reverse=True)[:15]
+top_feat_names_hr = [f[0] for f in top_features_hr]
+top_feat_corrs_hr = [f[1] for f in top_features_hr]
+
+y_pos = np.arange(len(top_feat_names_hr))
+colors = ['red' if c < 0 else 'green' for c in top_feat_corrs_hr]
+bars = axes[axes_idx].barh(y_pos, top_feat_corrs_hr, color=colors, alpha=0.7, edgecolor='black', linewidth=0.5)
+axes[axes_idx].set_yticks(y_pos)
+axes[axes_idx].set_yticklabels(top_feat_names_hr, fontsize=12, ha='right', fontweight='bold')
+axes[axes_idx].set_xlabel(f'Correlation with HR Absolute Error', fontsize=13, fontweight='bold')
+axes[axes_idx].set_title('Top 15 Features Correlated with HR Error', fontsize=14, fontweight='bold', pad=15)
+axes[axes_idx].grid(True, alpha=0.3, axis='x')
+axes[axes_idx].axvline(x=0, color='black', linestyle='--', linewidth=1)
+
+# Add feature names and correlation values on bars
+for i, (bar, corr_val, feat_name) in enumerate(zip(bars, top_feat_corrs_hr, top_feat_names_hr)):
+    width = bar.get_width()
+    # Add correlation value
+    label_x = width + (0.02 if width >= 0 else -0.02)
+    axes[axes_idx].text(label_x, bar.get_y() + bar.get_height()/2, 
+                       f'{corr_val:.3f}', 
+                       ha='left' if width >= 0 else 'right', 
+                       va='center', fontsize=11, fontweight='bold')
+    # Add feature name inside bar if there's space
+    if abs(width) > 0.1:  # Only if bar is wide enough
+        name_x = width * 0.5  # Center of bar
+        axes[axes_idx].text(name_x, bar.get_y() + bar.get_height()/2,
+                           feat_name,
+                           ha='center', va='center', fontsize=9,
+                           color='white', fontweight='bold',
+                           bbox=dict(boxstyle='round,pad=0.3', facecolor='black', alpha=0.5))
+
+plt.tight_layout()
+plt.savefig(os.path.join(output_dir, "feature_visualization_hr_error.png"), dpi=300, bbox_inches='tight')
+print(f"Saved HR error visualization to {os.path.join(output_dir, 'feature_visualization_hr_error.png')}")
+
+# Save correlation analysis for HR error
+corr_hr_col_name = 'correlation_with_hr_abs_diff'
+corr_hr_df = pd.DataFrame(list(correlations_hr.items()), columns=['feature', corr_hr_col_name])
+corr_hr_df = corr_hr_df.sort_values(corr_hr_col_name, key=abs, ascending=False)
+corr_hr_filename = "feature_correlations_with_hr_abs_diff.csv"
+corr_hr_df.to_csv(os.path.join(output_dir, corr_hr_filename), index=False)
+print(f"Saved HR error correlations to {os.path.join(output_dir, corr_hr_filename)}")
+
+# Create a dedicated larger plot for HR error feature correlations
+print("\nCreating dedicated feature correlation plot for HR error...")
+print("\n" + "="*80)
+print("TOP 15 FEATURES CORRELATED WITH HR ABSOLUTE ERROR:")
+print("="*80)
+top_n = 20  # Show top 20 features in plot, but print top 15
+top_features_hr_large = sorted(correlations_hr.items(), key=lambda x: abs(x[1]), reverse=True)[:top_n]
+top_feat_names_hr_large = [f[0] for f in top_features_hr_large]
+top_feat_corrs_hr_large = [f[1] for f in top_features_hr_large]
+
+# Print top 15 feature names clearly
+for i, (feat_name, corr_val) in enumerate(top_features_hr_large[:15], 1):
+    direction = "↑ Higher error" if corr_val > 0 else "↓ Lower error"
+    print(f"{i:2d}. {feat_name:30s} | Correlation: {corr_val:7.4f} | {direction}")
+print("="*80 + "\n")
+
+# Save top 15 to text file
+with open(os.path.join(output_dir, "top_15_features_hr_error.txt"), 'w') as f:
+    f.write("="*80 + "\n")
+    f.write("TOP 15 FEATURES CORRELATED WITH HR ABSOLUTE ERROR\n")
+    f.write("="*80 + "\n\n")
+    f.write("Rank | Feature Name                    | Correlation | Meaning\n")
+    f.write("-"*80 + "\n")
+    for i, (feat_name, corr_val) in enumerate(top_features_hr_large[:15], 1):
+        direction = "Higher error" if corr_val > 0 else "Lower error"
+        f.write(f"{i:4d} | {feat_name:30s} | {corr_val:11.4f} | {direction}\n")
+    f.write("\n" + "="*80 + "\n")
+    f.write("Note: Positive correlation means higher feature value = higher HR error (worse)\n")
+    f.write("      Negative correlation means higher feature value = lower HR error (better)\n")
+    f.write("="*80 + "\n")
+print(f"Saved top 15 features list to {os.path.join(output_dir, 'top_15_features_hr_error.txt')}")
+
+fig, ax = plt.subplots(1, 1, figsize=(14, 12))  # Made even larger
+y_pos = np.arange(len(top_feat_names_hr_large))
+colors = ['red' if c < 0 else 'green' for c in top_feat_corrs_hr_large]
+bars = ax.barh(y_pos, top_feat_corrs_hr_large, color=colors, alpha=0.7, edgecolor='black', linewidth=0.5)
+ax.set_yticks(y_pos)
+ax.set_yticklabels(top_feat_names_hr_large, fontsize=14, ha='right', fontweight='bold')  # Increased font size
+ax.set_xlabel('Correlation with HR Absolute Error', fontsize=16, fontweight='bold')
+ax.set_title(f'Top {top_n} Features Correlated with HR Absolute Error\n(Feature names shown on Y-axis)', 
+            fontsize=18, fontweight='bold', pad=20)
+ax.grid(True, alpha=0.3, axis='x')
+ax.axvline(x=0, color='black', linestyle='--', linewidth=1)
+
+# Add value labels on bars with feature names
+for i, (bar, corr_val, feat_name) in enumerate(zip(bars, top_feat_corrs_hr_large, top_feat_names_hr_large)):
+    width = bar.get_width()
+    label_x = width + (0.01 if width >= 0 else -0.01)
+    # Add correlation value
+    ax.text(label_x, bar.get_y() + bar.get_height()/2, 
+           f'{corr_val:.3f}', 
+           ha='left' if width >= 0 else 'right', 
+           va='center', fontsize=12, fontweight='bold')
+    # Add rank number on the left
+    ax.text(-0.05 if width >= 0 else 0.05, bar.get_y() + bar.get_height()/2,
+           f"#{i+1}",
+           ha='right' if width >= 0 else 'left',
+           va='center', fontsize=11, fontweight='bold', color='black')
+
+# Add legend
+legend_elements = [
+    Patch(facecolor='green', alpha=0.7, label='Positive correlation (higher error)'),
+    Patch(facecolor='red', alpha=0.7, label='Negative correlation (lower error)')
+]
+ax.legend(handles=legend_elements, loc='lower right', fontsize=11)
+
+plt.tight_layout()
+plt.savefig(os.path.join(output_dir, "feature_correlations_hr_error_detailed.png"), dpi=300, bbox_inches='tight')
+print(f"Saved detailed HR error correlation plot to {os.path.join(output_dir, 'feature_correlations_hr_error_detailed.png')}")
+plt.close()
+
+# Separate visualizations for signal and video features with HR error
+print("\nCreating separate HR error visualizations for signal and video features...")
+
+# Signal features only - HR error
+signal_cols = [col for col in signal_df.columns if col in feature_df.columns]
+if signal_cols:
+    X_signal = feature_df[signal_cols].values
+    X_signal = np.nan_to_num(X_signal, nan=0.0)
+    X_signal_scaled = StandardScaler().fit_transform(X_signal)
+    
+    pca_signal = PCA(n_components=2)
+    X_signal_pca = pca_signal.fit_transform(X_signal_scaled)
+    
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    scatter = ax.scatter(X_signal_pca[:, 0], X_signal_pca[:, 1], c=hr_error_metric,
+                        cmap='RdYlGn_r', s=50, alpha=0.6, edgecolors='black', linewidths=0.5)
+    ax.set_title(f'Signal Features - PCA - HR Error (Explained Variance: {pca_signal.explained_variance_ratio_.sum():.2%})')
+    ax.set_xlabel(f'PC1 ({pca_signal.explained_variance_ratio_[0]:.2%})')
+    ax.set_ylabel(f'PC2 ({pca_signal.explained_variance_ratio_[1]:.2%})')
+    ax.grid(True, alpha=0.3)
+    plt.colorbar(scatter, ax=ax, label=hr_error_label)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "signal_features_pca_hr_error.png"), dpi=300, bbox_inches='tight')
+    print(f"Saved signal features HR error visualization")
+
+# Video features only - HR error
+video_cols = [col for col in video_df.columns if col in feature_df.columns]
+if video_cols:
+    X_video = feature_df[video_cols].values
+    X_video = np.nan_to_num(X_video, nan=0.0)
+    X_video_scaled = StandardScaler().fit_transform(X_video)
+    
+    pca_video = PCA(n_components=2)
+    X_video_pca = pca_video.fit_transform(X_video_scaled)
+    
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    scatter = ax.scatter(X_video_pca[:, 0], X_video_pca[:, 1], c=hr_error_metric,
+                        cmap='RdYlGn_r', s=50, alpha=0.6, edgecolors='black', linewidths=0.5)
+    ax.set_title(f'Video Features - PCA - HR Error (Explained Variance: {pca_video.explained_variance_ratio_.sum():.2%})')
+    ax.set_xlabel(f'PC1 ({pca_video.explained_variance_ratio_[0]:.2%})')
+    ax.set_ylabel(f'PC2 ({pca_video.explained_variance_ratio_[1]:.2%})')
+    ax.grid(True, alpha=0.3)
+    plt.colorbar(scatter, ax=ax, label=hr_error_label)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "video_features_pca_hr_error.png"), dpi=300, bbox_inches='tight')
+    print(f"Saved video features HR error visualization")
 
 print("\n" + "="*80)
 print("Analysis complete!")

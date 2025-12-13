@@ -104,7 +104,7 @@ def plot_ppg_signals_train(predictions, labels, config, epoch, dataset_name='tra
             plt.savefig(save_file, bbox_inches='tight', dpi=300)
             plt.close()
         
-        print(f"    Saved {max_chunks} chunk plots to: {video_folder}")
+        print(f"    Saved {max_chunks} chunk plots to: {os.path.abspath(video_folder)}")
     
     print(f"Completed PPG plotting for all {len(predictions)} videos!")
 
@@ -124,6 +124,7 @@ def plot_ppg_signals(predictions, labels, config, filename_id, max_samples=5000)
         os.makedirs(save_path, exist_ok=True)
     
     print(f"\nGenerating PPG plots for {len(predictions)} videos...")
+    print(f"PPG plots directory: {os.path.abspath(save_path)}")
     
     # Iterate through each video (subject)
     for video_idx, video_id in enumerate(predictions.keys()):
@@ -171,7 +172,7 @@ def plot_ppg_signals(predictions, labels, config, filename_id, max_samples=5000)
             plt.savefig(save_file, bbox_inches='tight', dpi=300)
             plt.close()
         
-        print(f"    Saved {len(sorted_chunk_indices)} chunk plots to: {video_folder}")
+        print(f"    Saved {len(sorted_chunk_indices)} chunk plots to: {os.path.abspath(video_folder)}")
     
     print(f"Completed PPG plotting for all {len(predictions)} videos!")
 
@@ -206,14 +207,17 @@ def calculate_metrics(predictions, labels, config):
         pred_ppg_all.extend(label.tolist())
         gt_ppg_all.extend(prediction.tolist())
 
-        video_frame_size = prediction.shape[0]
-        if config.INFERENCE.EVALUATION_WINDOW.USE_SMALLER_WINDOW:
-            window_frame_size = config.INFERENCE.EVALUATION_WINDOW.WINDOW_SIZE * config.TEST.DATA.FS
-            if window_frame_size > video_frame_size:
-                window_frame_size = video_frame_size
+        # Use chunk length from test preprocessing to determine evaluation window
+        # This ensures metrics are calculated per chunk, matching the preprocessing
+        if hasattr(config.TEST.DATA.PREPROCESS, 'CHUNK_LENGTH') and \
+           config.TEST.DATA.PREPROCESS.CHUNK_LENGTH > 0:
+            window_frame_size = config.TEST.DATA.PREPROCESS.CHUNK_LENGTH
         else:
-            window_frame_size = video_frame_size
+            # Default: evaluate entire video as one window
+            window_frame_size = prediction.shape[0]
         
+        # DEBUG: Print concatenated length and window size
+        print(f"\nVideo {index}: prediction length={len(prediction)}, window_frame_size={window_frame_size}, num_windows={len(prediction)//window_frame_size}")
 
         for i in range(0, len(prediction), window_frame_size):
             pred_window = prediction[i:i+window_frame_size]

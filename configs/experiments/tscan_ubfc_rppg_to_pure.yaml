@@ -51,8 +51,4 @@ TEST:
     PREPROCESS:
       COLOR_CHANNEL: 'B'   # Use single RGB channel (Green) - must match TRAIN
       CHUNK_LENGTH: 240 # Override: template uses 700, but BASIC config uses 180
-
-# Override inference window size if needed (default is 30 seconds from common.yaml)
-INFERENCE:
-  EVALUATION_WINDOW:
-    WINDOW_SIZE: 10        # Override to 10 seconds for this experiment
+      # Note: This chunk length is also used for metrics evaluation (per-chunk metrics)

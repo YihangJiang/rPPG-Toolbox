@@ -11,8 +11,5 @@ LOG:
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
-  EVALUATION_WINDOW:
-    USE_SMALLER_WINDOW: False
-    WINDOW_SIZE: 30        # In seconds
   MODEL_PATH: ""
 

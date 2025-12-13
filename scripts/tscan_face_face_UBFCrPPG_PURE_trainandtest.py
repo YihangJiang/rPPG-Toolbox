@@ -1,6 +1,6 @@
 # %%
-# %reload_ext autoreload
-# %autoreload 2
+%reload_ext autoreload
+%autoreload 2
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
