@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from pathlib import Path
+from sklearn.metrics import r2_score
+from scipy.stats import pearsonr, linregress
+from scipy.stats import gaussian_kde
 
 def load_and_validate_data(csv_path):
     """Load CSV and validate required columns."""
@@ -203,6 +206,49 @@ def plot_top_worst_videos(video_stats, df, save_path, top_n=10):
     plt.close()
     print(f"Saved plot: {os.path.join(save_path, f'top_{top_n}_worst_videos.pdf')}")
 
+def plot_regression_analysis(df, save_path):
+    """Plot regression analysis: predicted vs ground truth HR with R² and correlation."""
+    print("Generating regression plot with R-squared...")
+    plt.figure(figsize=(10, 8))
+    
+    # Calculate R² and Pearson correlation
+    r2 = r2_score(df["gt_hr"], df["pred_hr"])
+    pearson_corr, p_value = pearsonr(df["gt_hr"], df["pred_hr"])
+    
+    # Calculate regression line
+    slope, intercept, r_value, p_val, std_err = linregress(df["gt_hr"], df["pred_hr"])
+    line_x = np.array([df["gt_hr"].min(), df["gt_hr"].max()])
+    line_y = slope * line_x + intercept
+    
+    # Create density-colored scatter plot
+    xy = np.vstack([df["gt_hr"], df["pred_hr"]])
+    z = gaussian_kde(xy)(xy)
+    sc = plt.scatter(df["gt_hr"], df["pred_hr"], c=z, s=50, alpha=0.6, edgecolors='black', linewidth=0.5)
+    
+    # Plot regression line
+    plt.plot(line_x, line_y, 'r--', linewidth=2, label=f'Regression line: y = {slope:.2f}x + {intercept:.2f}')
+    
+    # Plot perfect agreement line (y=x)
+    plt.plot(line_x, line_x, 'k--', linewidth=1.5, label='Perfect agreement (y=x)')
+    
+    plt.xlabel("Ground Truth HR (BPM)", fontsize=12)
+    plt.ylabel("Predicted HR (BPM)", fontsize=12)
+    plt.title(f"Regression Plot: Predicted vs Ground Truth HR\n$R^2$ = {r2:.3f}, Pearson r = {pearson_corr:.3f} (p = {p_value:.2e})", fontsize=14)
+    
+    # Add statistics text box
+    stats_text = f'$R^2$ = {r2:.3f}\nPearson r = {pearson_corr:.3f}\np-value = {p_value:.2e}\nSlope = {slope:.3f}\nIntercept = {intercept:.2f}'
+    plt.text(0.05, 0.95, stats_text, transform=plt.gca().transAxes,
+             verticalalignment='top', fontsize=11,
+             bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    
+    plt.legend(fontsize=10)
+    plt.colorbar(sc, label='Point Density')
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_path, "regression_r2_plot.pdf"), dpi=300)
+    plt.close()
+    print(f"Saved plot: {os.path.join(save_path, 'regression_r2_plot.pdf')}")
+
 def save_analysis_reports(video_stats, df, save_path):
     """Save detailed analysis reports as CSV files."""
     # Save full video statistics
@@ -244,6 +290,16 @@ def save_analysis_reports(video_stats, df, save_path):
         f.write(f"Mean SNR: {df['SNR'].mean():.2f}\n")
         f.write(f"Mean MACC: {df['MACC'].mean():.4f}\n\n")
         
+        # Regression statistics
+        r2 = r2_score(df["gt_hr"], df["pred_hr"])
+        pearson_corr, p_value = pearsonr(df["gt_hr"], df["pred_hr"])
+        slope, intercept, r_value, p_val, std_err = linregress(df["gt_hr"], df["pred_hr"])
+        f.write("REGRESSION STATISTICS:\n")
+        f.write("-" * 70 + "\n")
+        f.write(f"R-squared (R²): {r2:.4f}\n")
+        f.write(f"Pearson correlation: {pearson_corr:.4f} (p = {p_value:.2e})\n")
+        f.write(f"Regression line: y = {slope:.3f}x + {intercept:.2f}\n\n")
+        
         f.write("TOP 10 WORST PERFORMING VIDEOS:\n")
         f.write("-" * 70 + "\n")
         for idx, row in video_stats.head(10).iterrows():
@@ -265,7 +321,7 @@ def save_analysis_reports(video_stats, df, save_path):
 # %%
 """Main analysis pipeline."""
 # Define paths - using specific CSV file path
-csv_path = Path("/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/scripts/test_runs/exp/PURE_ClipLength180_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW72_SizeH72/saved_test_outputs/UBFC_UBFC_PURE_tscan_per_chunk_metrics.csv")
+csv_path = Path("/home/yj167/Desktop/rPPG-Toolbox/scripts/test_runs/exp/PURE_ClipLength240_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW72_SizeH72/saved_test_outputs/UBFC_UBFC_PURE_tscan_per_chunk_metrics.csv")
 
 if not csv_path.exists():
     raise FileNotFoundError(f"Could not find metrics file: {csv_path}")
@@ -295,6 +351,7 @@ plot_snr_vs_error(video_stats, analysis_dir)
 plot_macc_vs_error(video_stats, analysis_dir)
 plot_relative_error_distribution(df, analysis_dir)
 plot_top_worst_videos(video_stats, df, analysis_dir, top_n=10)
+plot_regression_analysis(df, analysis_dir)
 
 # Save reports
 print("\nSaving analysis reports...")
