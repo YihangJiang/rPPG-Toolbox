@@ -563,6 +563,178 @@ print("Analysis complete!")
 print(f"Results saved to: {output_dir}")
 print("="*80)
 
+# %%
+# ============================================================================
+# Visualize video frames from DATASET_PRE
+# ============================================================================
+print("\n" + "="*80)
+print("Visualizing video frames from DATASET_PRE...")
+print("="*80)
 
+def visualize_dataset_pre_frames(base_cached_path, exp_data_name, file_list_cache, 
+                                  output_dir, num_videos=5, frames_per_video=5, 
+                                  chunks_per_video=2):
+    """Visualize sample frames from preprocessed video chunks in DATASET_PRE.
+    
+    Args:
+        base_cached_path: Base path to DATASET_PRE
+        exp_data_name: Experiment data name (subdirectory in DATASET_PRE)
+        file_list_cache: Cache of file paths from build_file_list_cache
+        output_dir: Directory to save visualizations
+        num_videos: Number of videos to visualize
+        frames_per_video: Number of frames to show per chunk
+        chunks_per_video: Number of chunks to show per video
+    """
+    # Get unique video IDs from file list cache
+    video_ids = set()
+    for (vid_id, chunk_idx), file_path in file_list_cache.items():
+        video_ids.add(vid_id)
+    
+    video_ids = sorted(list(video_ids))[:num_videos]
+    print(f"\nVisualizing frames from {len(video_ids)} videos: {video_ids}")
+    
+    all_visualized = False
+    video_chunk_shape = None  # Track shape for title
+    
+    for video_idx, video_id in enumerate(video_ids):
+        # Get chunks for this video
+        video_chunks = [(vid, ch) for (vid, ch) in file_list_cache.keys() 
+                       if vid == video_id]
+        video_chunks = sorted(video_chunks, key=lambda x: int(x[1]))[:chunks_per_video]
+        
+        if not video_chunks:
+            print(f"  No chunks found for video {video_id}")
+            continue
+        
+        print(f"\n  Processing video {video_id}: {len(video_chunks)} chunks")
+        
+        # Create figure for this video
+        fig, axes = plt.subplots(chunks_per_video, frames_per_video, 
+                                 figsize=(frames_per_video * 2.5, chunks_per_video * 2.5))
+        if chunks_per_video == 1:
+            axes = axes.reshape(1, -1)
+        if frames_per_video == 1:
+            axes = axes.reshape(-1, 1)
+        
+        for chunk_idx, (vid_id, chunk_idx_int) in enumerate(video_chunks):
+            # Load video chunk
+            video_file = find_video_cache_file(base_cached_path, str(video_id), 
+                                              int(chunk_idx_int), file_list_cache, exp_data_name)
+            
+            if not video_file or not os.path.exists(video_file):
+                print(f"    Warning: Could not find video file for {video_id}_chunk{chunk_idx_int}")
+                continue
+            
+            try:
+                video_chunk = np.load(video_file)  # Shape: (T, H, W, C)
+                video_chunk_shape = video_chunk.shape  # Store for title
+                print(f"    Loaded chunk {chunk_idx_int}: shape {video_chunk.shape}")
+                
+                # Sample frames evenly across the chunk
+                num_frames = video_chunk.shape[0]
+                frame_indices = np.linspace(0, num_frames - 1, frames_per_video, dtype=int)
+                
+                for frame_col, frame_idx in enumerate(frame_indices):
+                    frame = video_chunk[frame_idx]  # Shape: (H, W, C)
+                    ax = axes[chunk_idx, frame_col]
+                    
+                    # Handle different channel configurations
+                    num_channels = frame.shape[-1] if len(frame.shape) > 2 else 1
+                    
+                    if num_channels == 3:
+                        # RGB visualization
+                        display_frame = frame.copy()
+                        # Normalize for display if needed (handle standardized/diff-normalized)
+                        if frame.min() < 0 or frame.max() > 255:
+                            display_frame = (display_frame - display_frame.min()) / (display_frame.max() - display_frame.min() + 1e-8)
+                            display_frame = np.clip(display_frame, 0, 1)
+                        else:
+                            display_frame = display_frame / 255.0
+                        
+                        ax.imshow(display_frame)
+                        ax.set_title(f'Chunk {chunk_idx_int}\nFrame {frame_idx}', fontsize=9)
+                    elif num_channels > 3:
+                        # Multiple transformations concatenated
+                        # Show first 3 channels (usually Raw RGB) if available
+                        if num_channels >= 3:
+                            display_frame = frame[:, :, :3].copy()
+                            if frame.min() < 0 or frame.max() > 255:
+                                display_frame = (display_frame - display_frame.min()) / (display_frame.max() - display_frame.min() + 1e-8)
+                                display_frame = np.clip(display_frame, 0, 1)
+                            else:
+                                display_frame = display_frame / 255.0
+                            
+                            ax.imshow(display_frame)
+                            ch_info = f'{num_channels}ch (showing RGB)'
+                        else:
+                            # Grayscale single channel
+                            display_frame = frame[:, :, 0].copy()
+                            if frame.min() < 0 or frame.max() > 255:
+                                display_frame = (display_frame - display_frame.min()) / (display_frame.max() - display_frame.min() + 1e-8)
+                                display_frame = np.clip(display_frame, 0, 1)
+                            else:
+                                display_frame = display_frame / 255.0
+                            
+                            ax.imshow(display_frame, cmap='gray')
+                            ch_info = f'{num_channels}ch (grayscale)'
+                        
+                        ax.set_title(f'Chunk {chunk_idx_int}\nFrame {frame_idx}\n{ch_info}', fontsize=8)
+                    else:
+                        # Single channel - grayscale
+                        display_frame = frame[:, :, 0] if len(frame.shape) > 2 else frame
+                        display_frame = display_frame.copy()
+                        if frame.min() < 0 or frame.max() > 255:
+                            display_frame = (display_frame - display_frame.min()) / (display_frame.max() - display_frame.min() + 1e-8)
+                            display_frame = np.clip(display_frame, 0, 1)
+                        else:
+                            display_frame = display_frame / 255.0
+                        
+                        ax.imshow(display_frame, cmap='gray')
+                        ax.set_title(f'Chunk {chunk_idx_int}\nFrame {frame_idx}\n1ch', fontsize=8)
+                    
+                    ax.axis('off')
+                
+            except Exception as e:
+                print(f"    Error loading chunk {chunk_idx_int}: {e}")
+                continue
+        
+        # Add overall title
+        shape_str = str(video_chunk_shape) if video_chunk_shape else "Unknown"
+        fig.suptitle(f'Video {video_id}\nShape: {shape_str}', 
+                     fontsize=12, y=0.995)
+        
+        plt.tight_layout()
+        
+        # Save figure
+        save_path = os.path.join(output_dir, f'video_{video_id}_frames.png')
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        print(f"  Saved visualization to: {save_path}")
+        plt.close()
+        
+        all_visualized = True
+    
+    if all_visualized:
+        print(f"\n✓ Video frame visualizations saved to: {output_dir}")
+    else:
+        print(f"\n⚠ No video frames were visualized. Check file paths and cache.")
+
+# Call the visualization function
+if len(file_list_cache) > 0:
+    visualize_dataset_pre_frames(
+        base_cached_path=base_cached_path,
+        exp_data_name=exp_data_name,
+        file_list_cache=file_list_cache,
+        output_dir=output_dir,
+        num_videos=5,  # Visualize 5 videos
+        frames_per_video=5,  # 5 frames per chunk
+        chunks_per_video=2  # 2 chunks per video
+    )
+else:
+    print("\n⚠ No video files found in cache. Cannot visualize frames.")
+    print(f"   File list cache size: {len(file_list_cache)}")
+
+print("\n" + "="*80)
+print("Video frame visualization complete!")
+print("="*80)
 
 # %%

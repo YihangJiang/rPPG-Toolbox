@@ -126,12 +126,18 @@ def apply_dataset_templates(config):
                     config.defrost()
                     data_config = getattr(config, section).DATA
                     
-                    # Collect only the experiment-specific settings (not defaults)
+                    # Collect experiment-specific settings to preserve
                     overrides = {}
                     if hasattr(data_config, 'BEGIN'):
                         overrides['BEGIN'] = data_config.BEGIN
                     if hasattr(data_config, 'END'):
                         overrides['END'] = data_config.END
+                    
+                    # Preserve PREPROCESS settings if they exist in experiment config
+                    preprocess_override = None
+                    if hasattr(data_config, 'PREPROCESS'):
+                        # Create a deep copy of PREPROCESS config
+                        preprocess_override = CN(data_config.PREPROCESS)
                     
                     # Load and merge dataset template
                     dataset_config = load_dataset_config(dataset_name)
@@ -140,9 +146,14 @@ def apply_dataset_templates(config):
                         temp_cn = CN(dataset_config)
                         data_config.merge_from_other_cfg(temp_cn)
                         
-                        # Re-apply overrides
+                        # Re-apply overrides (BEGIN, END)
                         for key, value in overrides.items():
                             setattr(data_config, key, value)
+                        
+                        # Re-apply PREPROCESS settings, merging to preserve structure
+                        if preprocess_override is not None:
+                            # Merge PREPROCESS settings, allowing experiment config to override template
+                            data_config.PREPROCESS.merge_from_other_cfg(preprocess_override)
                                             
                     config.freeze()
 

@@ -452,6 +452,18 @@ def update_config(config, args):
     config_file_path = args.config_file
     skip_dataset_templates = 'train_configs' in config_file_path
 
+    # Determine project root: find the directory containing 'configs' folder
+    config_abs_path = os.path.abspath(config_file_path)
+    project_root = os.path.dirname(config_abs_path)
+    # Navigate up until we find the project root (directory containing 'configs')
+    while project_root != os.path.dirname(project_root):  # Stop at filesystem root
+        if os.path.exists(os.path.join(project_root, 'configs')):
+            break
+        project_root = os.path.dirname(project_root)
+    else:
+        # Fallback: use the directory containing config.py (this file)
+        project_root = os.path.dirname(os.path.abspath(__file__))
+
     # store default file list path for checking against later
     default_TRAIN_FILE_LIST_PATH = config.TRAIN.DATA.FILE_LIST_PATH
     default_VALID_FILE_LIST_PATH = config.VALID.DATA.FILE_LIST_PATH
@@ -465,10 +477,29 @@ def update_config(config, args):
     # Support legacy configs that specify LOG.PATH instead of separate TRAIN/TEST paths
     if hasattr(config.LOG, "PATH") and config.LOG.PATH:
         base_log_path = config.LOG.PATH
+        # If base_log_path is relative, make it absolute relative to scripts folder
+        if not os.path.isabs(base_log_path):
+            # Ensure base_log_path is under scripts folder
+            if not base_log_path.startswith('scripts/'):
+                base_log_path = os.path.join('scripts', base_log_path)
+            base_log_path = os.path.join(project_root, base_log_path)
         if config.LOG.TRAIN_PATH == "runs/exp" or not config.LOG.TRAIN_PATH:
             config.LOG.TRAIN_PATH = os.path.join(base_log_path, "train_runs", "exp")
         if config.LOG.TEST_PATH == "runs/exp" or not config.LOG.TEST_PATH:
             config.LOG.TEST_PATH = os.path.join(base_log_path, "test_runs", "exp")
+    
+    # Make TRAIN_PATH and TEST_PATH absolute if they're relative
+    # Paths are placed under the scripts folder, relative to project root
+    if config.LOG.TRAIN_PATH and not os.path.isabs(config.LOG.TRAIN_PATH):
+        # If path doesn't start with 'scripts/', prepend it
+        if not config.LOG.TRAIN_PATH.startswith('scripts/'):
+            config.LOG.TRAIN_PATH = os.path.join('scripts', config.LOG.TRAIN_PATH)
+        config.LOG.TRAIN_PATH = os.path.join(project_root, config.LOG.TRAIN_PATH)
+    if config.LOG.TEST_PATH and not os.path.isabs(config.LOG.TEST_PATH):
+        # If path doesn't start with 'scripts/', prepend it
+        if not config.LOG.TEST_PATH.startswith('scripts/'):
+            config.LOG.TEST_PATH = os.path.join('scripts', config.LOG.TEST_PATH)
+        config.LOG.TEST_PATH = os.path.join(project_root, config.LOG.TEST_PATH)
 
     # Apply dataset templates BEFORE generating EXP_DATA_NAME
     # This ensures correct values (like CHUNK_LENGTH) are used for folder naming
@@ -484,7 +515,8 @@ def update_config(config, args):
         config.TRAIN.DATA.FILE_LIST_PATH = os.path.join(config.TRAIN.DATA.CACHED_PATH, 'DataFileLists')
 
     if config.TRAIN.DATA.EXP_DATA_NAME == '':
-        config.TRAIN.DATA.EXP_DATA_NAME = "_".join([config.TRAIN.DATA.DATASET, "DataType{0}".format("_".join(config.TRAIN.DATA.PREPROCESS.DATA_TYPE)),
+        config.TRAIN.DATA.EXP_DATA_NAME = "_".join([config.TRAIN.DATA.DATASET, "ClipLength{0}".format(
+            str(config.TRAIN.DATA.PREPROCESS.CHUNK_LENGTH)), "DataType{0}".format("_".join(config.TRAIN.DATA.PREPROCESS.DATA_TYPE)),
                                       "DataAug{0}".format("_".join(config.TRAIN.DATA.PREPROCESS.DATA_AUG)),
                                       "LabelType{0}".format(config.TRAIN.DATA.PREPROCESS.LABEL_TYPE),
                                       "Crop_face{0}".format(config.TRAIN.DATA.PREPROCESS.CROP_FACE.DO_CROP_FACE),
@@ -495,8 +527,7 @@ def update_config(config, args):
                                         "det_len{0}".format(config.TRAIN.DATA.PREPROCESS.CROP_FACE.DETECTION.DYNAMIC_DETECTION_FREQUENCY),
                                         "Median_face_box{0}".format(config.TRAIN.DATA.PREPROCESS.CROP_FACE.DETECTION.USE_MEDIAN_FACE_BOX),
                                         "SizeW{0}".format(str(config.TRAIN.DATA.PREPROCESS.RESIZE.W)),
-                                        "SizeH{0}".format(str(config.TRAIN.DATA.PREPROCESS.RESIZE.W)), "ClipLength{0}".format(
-            str(config.TRAIN.DATA.PREPROCESS.CHUNK_LENGTH))
+                                        "SizeH{0}".format(str(config.TRAIN.DATA.PREPROCESS.RESIZE.H))
                                               ])
     config.TRAIN.DATA.CACHED_PATH = os.path.join(config.TRAIN.DATA.CACHED_PATH, config.TRAIN.DATA.EXP_DATA_NAME)
 

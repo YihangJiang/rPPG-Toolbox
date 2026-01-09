@@ -1,12 +1,17 @@
 # %%
 %reload_ext autoreload
 %autoreload 2
-from pathlib import Path
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from config import get_config
-# %%
+from pathlib import Path
 
+# Add project root to Python path for imports (needed when running in Jupyter/IPython)
+script_dir = Path(__file__).parent if '__file__' in globals() else Path.cwd() / 'scripts'
+project_root = script_dir.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+
+from config import get_config
 import types
 from dataset import data_loader
 import numpy as np
@@ -36,10 +41,11 @@ def seed_worker(worker_id):
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 
-# %%
 args = types.SimpleNamespace()
 # TSCAN rppg pure - using minimal hierarchical config
-args.config_file = "../configs/experiments/tscan_ubfc_rppg_to_pure.yaml"
+# Use path relative to script location to avoid working directory issues
+# (project_root already calculated above)
+args.config_file = str(project_root / "configs" / "experiments" / "tscan_ubfc_rppg_to_pure.yaml")
 # baseline
 config = get_config(args)
 print('Configuration:')
@@ -54,6 +60,7 @@ print(f"  TEST CHUNK_LENGTH:  {config.TEST.DATA.PREPROCESS.CHUNK_LENGTH}")
 print("=" * 80)
 print()
 
+# %%
 data_loader_dict = dict()
 
 def train(config, data_loader_dict):
