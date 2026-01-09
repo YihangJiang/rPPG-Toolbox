@@ -2,14 +2,9 @@
 """
 Demo script for heart rate inference from a video file.
 
-Usage:
-    python demo_inference.py --video input.mp4 --model path/to/model.pth [--config path/to/config.yaml]
-
-Example:
-    python demo_inference.py --video input.mp4 --model ./final_model_release/PURE_TSCAN.pth
+Edit the hardcoded paths at the top of main() function to use your video and model.
 """
 
-import argparse
 import sys
 import os
 from pathlib import Path
@@ -20,7 +15,7 @@ from scipy.signal import butter, filtfilt
 import scipy.signal
 
 # Add project root to path
-project_root = Path(__file__).parent.absolute()
+project_root = Path(__file__).parent.parent.absolute()  # Go up one level from demo/ to project root
 sys.path.insert(0, str(project_root))
 
 from config import get_config, _C
@@ -178,18 +173,20 @@ def calculate_heart_rate(ppg_signal, fps, diff_flag=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Heart rate inference from video')
-    parser.add_argument('--video', type=str, required=True, help='Path to input video file')
-    parser.add_argument('--model', type=str, required=True, help='Path to trained model .pth file')
-    parser.add_argument('--config', type=str, default=None, help='Path to config YAML file (optional)')
-    parser.add_argument('--device', type=str, default='cuda:0', help='Device to use (cuda:0 or cpu)')
-    args = parser.parse_args()
+    # ============================================================================
+    # HARDCODED PATHS - Edit these to use your video and model
+    # ============================================================================
+    video_path = "input.mp4"  # Path to input video file
+    model_path = "./final_model_release/PURE_TSCAN.pth"  # Path to trained model .pth file
+    config_path = None  # Path to config YAML file (optional, set to None to use defaults)
+    device = "cuda:0"  # Device to use: "cuda:0" or "cpu"
+    # ============================================================================
     
     # Load config
-    if args.config:
+    if config_path:
         from types import SimpleNamespace
         config_args = SimpleNamespace()
-        config_args.config_file = args.config
+        config_args.config_file = config_path
         config = get_config(config_args)
     else:
         # Use default config based on the experiment config
@@ -212,14 +209,14 @@ def main():
         config.TEST.DATA.PREPROCESS.RESIZE.W = 72
         config.TEST.DATA.PREPROCESS.DATA_AUG = ['None']
         config.MODEL.TSCAN.FRAME_DEPTH = 10
-        config.DEVICE = args.device
+        config.DEVICE = device
         config.freeze()
     
     # Read video first to get FPS
     print("=" * 60)
     print("Reading video...")
     print("=" * 60)
-    frames, fps = read_video(args.video)
+    frames, fps = read_video(video_path)
     
     # Initialize BaseLoader for preprocessing (we won't use it fully, just for preprocessing methods)
     class DummyLoader(BaseLoader):
@@ -264,7 +261,7 @@ def main():
     print("\n" + "=" * 60)
     print("Loading model...")
     print("=" * 60)
-    model, device = load_model(args.model, config)
+    model, device = load_model(model_path, config)
     
     # Run inference
     print("\n" + "=" * 60)
@@ -287,7 +284,7 @@ def main():
     print("\n" + "=" * 60)
     print("RESULTS")
     print("=" * 60)
-    print(f"Input video: {args.video}")
+    print(f"Input video: {video_path}")
     print(f"Video FPS: {fps:.2f}")
     print(f"Video duration: {len(frames) / fps:.2f} seconds")
     print(f"Total frames: {len(frames)}")
