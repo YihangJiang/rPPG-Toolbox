@@ -24,6 +24,8 @@ test.yaml
 *.avi
 
 # Ignore training and testing output directories
-scripts/test_runs/exp/
-scripts/train_runs/exp/
+train_runs/
+test_runs/
+scripts/test_runs/
+scripts/train_runs/
 scripts/PreprocessedData/
