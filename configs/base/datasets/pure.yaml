@@ -5,7 +5,7 @@
 DATA_TEMPLATE:
   FS: 30
   DATASET: PURE
-  DO_PREPROCESS: False 
+  DO_PREPROCESS: False
   DATA_FORMAT: NDCHW
   DATA_PATH: "/mnt/nvme2/rppg_data/DATASET_3"
   CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE"

@@ -1,0 +1,38 @@
+BASE: ['']
+TOOLBOX_MODE: "only_test"      # "train_and_test"  or "only_test"
+TEST:
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA']
+  USE_LAST_EPOCH: True
+  DATA:
+    DATASET: PURE  # Dataset name triggers auto-load of dataset template (same as training config)
+    DO_PREPROCESS: False                    # if first time, should be true
+    BEGIN: 0.0
+    END: 1.0
+    PREPROCESS:
+      # Only specify settings that differ from template (matching efficientphys_ubfc_rppg_to_pure.yaml TEST section)
+      # The training config TEST section only overrides these three settings, rest come from template
+      DATA_TYPE: ['Standardized']  # Must match training config (EfficientPhys uses Standardized, not DiffNormalized+Standardized)
+      LABEL_TYPE: DiffNormalized  # Must match training config
+      CHUNK_LENGTH: 240  # Must match training config TEST section
+      RESIZE:
+        H: 96  # EfficientPhys only supports 36, 72, or 96 - must match training config
+        W: 96
+      # Note: Other settings will come from PURE dataset template:
+      # - DATA_AUG: ['None'] (from template)
+      # - BACKEND: 'HC' (from template, training config doesn't override)
+      # - All other CROP_FACE settings from template
+DEVICE: cuda:0
+NUM_OF_GPU_TRAIN: 1
+LOG:
+  PATH: runs/exp
+MODEL:
+  DROP_RATE: 0.2
+  NAME: EfficientPhys
+  EFFICIENTPHYS:
+    FRAME_DEPTH: 10
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: FFT        # "FFT" or "peak detection"
+  MODEL_PATH: "/home/yj167/Desktop/rPPG-Toolbox/scripts/train_runs/exp/UBFC-rPPG_ClipLength180_DataTypeStandardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW96_SizeH96/PreTrainedModels/Best_EfficientPhys.pth"
+  # Using Best_EfficientPhys.pth (best validation performance model)
+

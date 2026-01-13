@@ -25,6 +25,9 @@ TRAIN:
       DATA_TYPE: ['Standardized']  # EfficientPhys uses Standardized data
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
+      RESIZE:
+        H: 96  # EfficientPhys only supports 36, 72, or 96
+        W: 96
 
 # Validation configuration - ONLY experiment-specific settings
 VALID:
@@ -37,6 +40,9 @@ VALID:
       DATA_TYPE: ['Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
+      RESIZE:
+        H: 96  # EfficientPhys only supports 36, 72, or 96
+        W: 96
 
 # Test configuration - ONLY experiment-specific settings
 TEST:
@@ -51,6 +57,9 @@ TEST:
       DATA_TYPE: ['Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 240 # Override: template uses 700, but BASIC config uses 180
+      RESIZE:
+        H: 96  # EfficientPhys only supports 36, 72, or 96
+        W: 96
       # Note: This chunk length is also used for metrics evaluation (per-chunk metrics)
 
 # Model-specific settings
