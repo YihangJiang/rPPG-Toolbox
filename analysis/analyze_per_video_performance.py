@@ -149,11 +149,6 @@ def save_analysis_reports(video_stats, df, save_path):
     video_stats.to_csv(os.path.join(save_path, "video_statistics.csv"), index=False)
     print(f"Saved: {os.path.join(save_path, 'video_statistics.csv')}")
     
-    # Save worst 20 videos
-    worst_20 = video_stats.head(20)
-    worst_20.to_csv(os.path.join(save_path, "worst_20_videos.csv"), index=False)
-    print(f"Saved: {os.path.join(save_path, 'worst_20_videos.csv')}")
-    
     # Save detailed chunk analysis for worst videos
     worst_video_ids = video_stats.head(20)["video_id"].tolist()
     worst_chunks = df[df["video_id"].isin(worst_video_ids)].copy()
@@ -210,7 +205,7 @@ def save_analysis_reports(video_stats, df, save_path):
 # %%
 """Main analysis pipeline."""
 # Define paths - using specific CSV file path
-csv_path = Path("/home/yj167/Desktop/rPPG-Toolbox/scripts/test_runs/exp/PURE_ClipLength240_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW72_SizeH72/saved_test_outputs/UBFC_UBFC_PURE_tscan_per_chunk_metrics.csv")
+csv_path = Path("/home/yj167/Desktop/rPPG-Toolbox/scripts/test_runs/exp/PURE_ClipLength240_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW96_SizeH96/saved_test_outputs/UBFC_UBFC_PURE_deepphys_per_chunk_metrics.csv")
 
 if not csv_path.exists():
     raise FileNotFoundError(f"Could not find metrics file: {csv_path}")

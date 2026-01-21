@@ -5,7 +5,7 @@
 DATA_TEMPLATE:
   FS: 35
   DATASET: UBFC-PHYS
-  DO_PREPROCESS: True
+  DO_PREPROCESS: False
   DATA_FORMAT: NDCHW
   DATA_PATH: "/mnt/nvme2/rppg_data/ubfc_phys"
   CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE"
