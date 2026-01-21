@@ -106,17 +106,6 @@ def merge_dataset_config(config, section_name, overrides=None):
     config.freeze()
 
 
-def _cfg_to_dict(cfg_node):
-    """Recursively convert CfgNode to dictionary."""
-    if isinstance(cfg_node, CN):
-        result = {}
-        for key in cfg_node.keys():
-            result[key] = _cfg_to_dict(cfg_node[key])
-        return result
-    else:
-        return cfg_node
-
-
 def apply_dataset_templates(config):
     """
     Automatically apply dataset templates to all data sections.
@@ -148,21 +137,17 @@ def apply_dataset_templates(config):
                     # But exclude default values that weren't explicitly set
                     preprocess_override = None
                     if hasattr(data_config, 'PREPROCESS'):
-                        # Check if RESIZE matches base defaults (128x128) before creating copy
-                        # This prevents default values from overriding dataset template values
-                        should_exclude_resize = False
-                        if hasattr(data_config.PREPROCESS, 'RESIZE'):
-                            resize_h = data_config.PREPROCESS.RESIZE.H if hasattr(data_config.PREPROCESS.RESIZE, 'H') else None
-                            resize_w = data_config.PREPROCESS.RESIZE.W if hasattr(data_config.PREPROCESS.RESIZE, 'W') else None
-                            # If RESIZE matches base defaults, exclude it so dataset template value is used
-                            if resize_h == 128 and resize_w == 128:
-                                should_exclude_resize = True
+                        # Create a deep copy of PREPROCESS config
+                        preprocess_override = CN(data_config.PREPROCESS)
                         
-                        # Create a filtered copy of PREPROCESS config
-                        preprocess_dict = _cfg_to_dict(data_config.PREPROCESS)
-                        if should_exclude_resize and 'RESIZE' in preprocess_dict:
-                            del preprocess_dict['RESIZE']
-                        preprocess_override = CN(preprocess_dict)
+                        # Remove RESIZE if it matches base defaults (128x128)
+                        # This prevents default values from overriding dataset template values
+                        # if hasattr(preprocess_override, 'RESIZE'):
+                        #     resize_h = preprocess_override.RESIZE.H if hasattr(preprocess_override.RESIZE, 'H') else None
+                        #     resize_w = preprocess_override.RESIZE.W if hasattr(preprocess_override.RESIZE, 'W') else None
+                        #     # If RESIZE matches base defaults, remove it so dataset template value is used
+                        #     if resize_h == 128 and resize_w == 128:
+                        #         del preprocess_override.RESIZE
                     
                     # Load and merge dataset template
                     dataset_config = load_dataset_config(dataset_name)

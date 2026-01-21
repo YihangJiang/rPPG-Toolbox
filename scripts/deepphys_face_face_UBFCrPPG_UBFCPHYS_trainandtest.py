@@ -42,10 +42,10 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 args = types.SimpleNamespace()
-# DeepPhys rppg pure - using minimal hierarchical config
+# DeepPhys rppg to phys - using minimal hierarchical config
 # Use path relative to script location to avoid working directory issues
 # (project_root already calculated above)
-args.config_file = str(project_root / "configs" / "experiments" / "deepphys_ubfc_rppg_to_pure.yaml")
+args.config_file = str(project_root / "configs" / "experiments" / "deepphys_ubfc_rppg_to_phys.yaml")
 # baseline
 config = get_config(args)
 print('Configuration:')
@@ -91,7 +91,7 @@ def train(config, data_loader_dict):
 
 train_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
 valid_loader = data_loader.UBFCrPPGLoader.UBFCrPPGLoader
-test_loader = data_loader.PURELoader.PURELoader
+test_loader = data_loader.UBFCPHYSLoader.UBFCPHYSLoader
 # %%
 train_data_loader = train_loader(
     name="train",

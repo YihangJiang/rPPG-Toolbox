@@ -18,25 +18,29 @@ TRAIN:
   PLOT_LOSSES_AND_LR: True
   DATA:
     DATASET: UBFC-rPPG  # Dataset name triggers auto-load of all preprocessing/paths
-    DO_PREPROCESS: True  # Override: if first time, should be true
     BEGIN: 0.0          # Experiment-specific: training split start
     END: 0.8            # Experiment-specific: training split end
     PREPROCESS:
       DATA_TYPE: ['DiffNormalized', 'Standardized']  # DeepPhys uses both like TSCAN
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
+      RESIZE:
+        H: 96  # DeepPhys supports: 36, 72, or 96
+        W: 96  # DeepPhys supports: 36, 72, or 96
 
 # Validation configuration - ONLY experiment-specific settings
 VALID:
   DATA:
     DATASET: UBFC-rPPG  # Same dataset as training
-    DO_PREPROCESS: True  # Override: if first time, should be true
     BEGIN: 0.8          # Experiment-specific: validation split start
     END: 1.0            # Experiment-specific: validation split end
     PREPROCESS:
       DATA_TYPE: ['DiffNormalized', 'Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
+      RESIZE:
+        H: 96  # DeepPhys supports: 36, 72, or 96
+        W: 96  # DeepPhys supports: 36, 72, or 96
 
 # Test configuration - ONLY experiment-specific settings
 TEST:
@@ -44,12 +48,14 @@ TEST:
   USE_LAST_EPOCH: false
   DATA:
     DATASET: PURE  # Different dataset for cross-dataset testing
-    DO_PREPROCESS: true  # Override: if first time, should be true
     BEGIN: 0.0          # Experiment-specific: test split start
     END: 1.0            # Experiment-specific: test split end
     PREPROCESS:
       DATA_TYPE: ['DiffNormalized', 'Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 240  # Override: template uses 700, but BASIC config uses 180
+      RESIZE:
+        H: 96  # DeepPhys supports: 36, 72, or 96 (must match TRAIN)
+        W: 96  # DeepPhys supports: 36, 72, or 96 (must match TRAIN)
       # Note: This chunk length is also used for metrics evaluation (per-chunk metrics)
 

@@ -98,10 +98,12 @@ class DeepPhysTrainer(BaseTrainer):
                 if self.min_valid_loss is None:
                     self.min_valid_loss = valid_loss
                     self.best_epoch = epoch
+                    self.save_model(epoch, best=1)
                     print("Update best model! Best epoch: {}".format(self.best_epoch))
                 elif (valid_loss < self.min_valid_loss):
                     self.min_valid_loss = valid_loss
                     self.best_epoch = epoch
+                    self.save_model(epoch, best=1)
                     print("Update best model! Best epoch: {}".format(self.best_epoch))
         if not self.config.TEST.USE_LAST_EPOCH: 
             print("best trained epoch: {}, min_val_loss: {}".format(self.best_epoch, self.min_valid_loss))
@@ -199,11 +201,18 @@ class DeepPhysTrainer(BaseTrainer):
         if self.config.TEST.OUTPUT_SAVE_DIR: # saving test outputs
             self.save_test_outputs(predictions, labels, self.config)
 
-    def save_model(self, index):
-        """Inits parameters from args and the writer for TensorboardX."""
-        if not os.path.exists(self.model_dir):
-            os.makedirs(self.model_dir)
-        model_path = os.path.join(
-            self.model_dir, self.model_file_name + '_Epoch' + str(index) + '.pth')
-        torch.save(self.model.state_dict(), model_path)
+    def save_model(self, index, best=0):
+        """Save model checkpoint. If best=1, saves as Best_DeepPhys.pth"""
+        if best:
+            if not os.path.exists(self.model_dir):
+                os.makedirs(self.model_dir)
+            print('Saved Best Model')
+            torch.save(self.model.state_dict(), os.path.join(self.model_dir, "Best_DeepPhys.pth"))
+        else:
+            if not os.path.exists(self.model_dir):
+                os.makedirs(self.model_dir)
+            model_path = os.path.join(
+                self.model_dir, self.model_file_name + '_Epoch' + str(index) + '.pth')
+            torch.save(self.model.state_dict(), model_path)
+            print('Saved Model Path: ', model_path)
  

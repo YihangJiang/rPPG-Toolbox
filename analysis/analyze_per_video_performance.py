@@ -83,64 +83,6 @@ def plot_mean_vs_median_error(video_stats, save_path):
     plt.close()
     print(f"Saved plot: {os.path.join(save_path, 'mean_vs_median_error.pdf')}")
 
-def plot_rmse_per_video(video_stats, save_path):
-    """Plot RMSE per video."""
-    plt.figure(figsize=(20, 6))
-    x = np.arange(len(video_stats))
-    
-    plt.bar(x, video_stats["RMSE"], color="coral", edgecolor='black')
-    
-    video_labels = video_stats["video_id"].astype(str)
-    plt.xticks(x, video_labels, rotation=90, ha='right', fontsize=8)
-    
-    plt.xlabel("Video ID (sorted by median error)", fontsize=12)
-    plt.ylabel("RMSE (BPM)", fontsize=12)
-    plt.title("Per-Video Root Mean Squared Error", fontsize=14)
-    plt.grid(axis='y', linestyle='--', alpha=0.6)
-    plt.tight_layout()
-    
-    plt.savefig(os.path.join(save_path, "rmse_per_video.pdf"), dpi=300)
-    plt.close()
-    print(f"Saved plot: {os.path.join(save_path, 'rmse_per_video.pdf')}")
-
-def plot_snr_vs_error(video_stats, save_path):
-    """Plot SNR vs absolute error to see correlation."""
-    plt.figure(figsize=(10, 6))
-    
-    plt.scatter(video_stats["SNR_mean"], video_stats["abs_error_median"], 
-                alpha=0.6, s=80, c=video_stats["abs_error_median"], 
-                cmap='YlOrRd', edgecolors='black')
-    
-    plt.xlabel("Mean SNR", fontsize=12)
-    plt.ylabel("Median Absolute Error (BPM)", fontsize=12)
-    plt.title("Relationship between SNR and Error", fontsize=14)
-    plt.colorbar(label='Median Abs Error (BPM)')
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    
-    plt.savefig(os.path.join(save_path, "snr_vs_error.pdf"), dpi=300)
-    plt.close()
-    print(f"Saved plot: {os.path.join(save_path, 'snr_vs_error.pdf')}")
-
-def plot_macc_vs_error(video_stats, save_path):
-    """Plot MACC vs absolute error."""
-    plt.figure(figsize=(10, 6))
-    
-    plt.scatter(video_stats["MACC_mean"], video_stats["abs_error_median"], 
-                alpha=0.6, s=80, c=video_stats["abs_error_median"], 
-                cmap='YlOrRd', edgecolors='black')
-    
-    plt.xlabel("Mean MACC", fontsize=12)
-    plt.ylabel("Median Absolute Error (BPM)", fontsize=12)
-    plt.title("Relationship between MACC and Error", fontsize=14)
-    plt.colorbar(label='Median Abs Error (BPM)')
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    
-    plt.savefig(os.path.join(save_path, "macc_vs_error.pdf"), dpi=300)
-    plt.close()
-    print(f"Saved plot: {os.path.join(save_path, 'macc_vs_error.pdf')}")
-
 def plot_relative_error_distribution(df, save_path):
     """Plot distribution of relative errors."""
     plt.figure(figsize=(10, 6))
@@ -157,54 +99,6 @@ def plot_relative_error_distribution(df, save_path):
     plt.savefig(os.path.join(save_path, "relative_error_distribution.pdf"), dpi=300)
     plt.close()
     print(f"Saved plot: {os.path.join(save_path, 'relative_error_distribution.pdf')}")
-
-def plot_top_worst_videos(video_stats, df, save_path, top_n=10):
-    """Plot detailed comparison for top N worst videos."""
-    worst_videos = video_stats.head(top_n)
-    
-    fig, axes = plt.subplots(2, 1, figsize=(14, 10))
-    
-    # Plot 1: Error metrics for worst videos
-    x = np.arange(len(worst_videos))
-    width = 0.25
-    
-    axes[0].bar(x - width, worst_videos["abs_error_mean"], width, 
-                label="Mean Abs Error", color="crimson", edgecolor='black')
-    axes[0].bar(x, worst_videos["abs_error_median"], width, 
-                label="Median Abs Error", color="orange", edgecolor='black')
-    axes[0].bar(x + width, worst_videos["RMSE"], width, 
-                label="RMSE", color="darkred", edgecolor='black')
-    
-    axes[0].set_xticks(x)
-    axes[0].set_xticklabels(worst_videos["video_id"], rotation=45, ha='right')
-    axes[0].set_ylabel("Error (BPM)", fontsize=12)
-    axes[0].set_title(f"Top {top_n} Worst Performing Videos - Error Metrics", fontsize=14)
-    axes[0].legend()
-    axes[0].grid(axis='y', linestyle='--', alpha=0.6)
-    
-    # Plot 2: SNR and MACC for worst videos
-    ax2_twin = axes[1].twinx()
-    
-    axes[1].bar(x - width/2, worst_videos["SNR_mean"], width, 
-                label="SNR", color="steelblue", edgecolor='black')
-    ax2_twin.bar(x + width/2, worst_videos["MACC_mean"], width, 
-                 label="MACC", color="seagreen", edgecolor='black')
-    
-    axes[1].set_xticks(x)
-    axes[1].set_xticklabels(worst_videos["video_id"], rotation=45, ha='right')
-    axes[1].set_ylabel("SNR", fontsize=12, color="steelblue")
-    ax2_twin.set_ylabel("MACC", fontsize=12, color="seagreen")
-    axes[1].set_title(f"Top {top_n} Worst Performing Videos - Quality Metrics", fontsize=14)
-    axes[1].tick_params(axis='y', labelcolor="steelblue")
-    ax2_twin.tick_params(axis='y', labelcolor="seagreen")
-    axes[1].legend(loc='upper left')
-    ax2_twin.legend(loc='upper right')
-    axes[1].grid(axis='y', linestyle='--', alpha=0.6)
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(save_path, f"top_{top_n}_worst_videos.pdf"), dpi=300)
-    plt.close()
-    print(f"Saved plot: {os.path.join(save_path, f'top_{top_n}_worst_videos.pdf')}")
 
 def plot_regression_analysis(df, save_path):
     """Plot regression analysis: predicted vs ground truth HR with R² and correlation."""
@@ -259,11 +153,6 @@ def save_analysis_reports(video_stats, df, save_path):
     worst_20 = video_stats.head(20)
     worst_20.to_csv(os.path.join(save_path, "worst_20_videos.csv"), index=False)
     print(f"Saved: {os.path.join(save_path, 'worst_20_videos.csv')}")
-    
-    # Save best 20 videos
-    best_20 = video_stats.tail(20)
-    best_20.to_csv(os.path.join(save_path, "best_20_videos.csv"), index=False)
-    print(f"Saved: {os.path.join(save_path, 'best_20_videos.csv')}")
     
     # Save detailed chunk analysis for worst videos
     worst_video_ids = video_stats.head(20)["video_id"].tolist()
@@ -346,11 +235,7 @@ video_stats = compute_video_statistics(df)
 # Generate all plots
 print("\nGenerating plots...")
 plot_mean_vs_median_error(video_stats, analysis_dir)
-plot_rmse_per_video(video_stats, analysis_dir)
-plot_snr_vs_error(video_stats, analysis_dir)
-plot_macc_vs_error(video_stats, analysis_dir)
 plot_relative_error_distribution(df, analysis_dir)
-plot_top_worst_videos(video_stats, df, analysis_dir, top_n=10)
 plot_regression_analysis(df, analysis_dir)
 
 # Save reports

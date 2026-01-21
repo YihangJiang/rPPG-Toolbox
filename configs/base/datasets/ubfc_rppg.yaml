@@ -11,9 +11,7 @@ DATA_TEMPLATE:
   CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE/"
   EXP_DATA_NAME: ""
   PREPROCESS:
-    DATA_TYPE: ['DiffNormalized', 'Standardized']
     DATA_AUG: ['None']
-    LABEL_TYPE: DiffNormalized
     DO_CHUNK: True
     CHUNK_LENGTH: 180
     CROP_FACE:
@@ -25,7 +23,4 @@ DATA_TEMPLATE:
         DO_DYNAMIC_DETECTION: False
         DYNAMIC_DETECTION_FREQUENCY: 30
         USE_MEDIAN_FACE_BOX: False
-    RESIZE:
-      H: 72
-      W: 72
 

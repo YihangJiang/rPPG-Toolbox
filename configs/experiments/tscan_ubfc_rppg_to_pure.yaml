@@ -18,7 +18,6 @@ TRAIN:
   PLOT_LOSSES_AND_LR: True
   DATA:
     DATASET: UBFC-rPPG  # Dataset name triggers auto-load of all preprocessing/paths
-    DO_PREPROCESS: True  # Override: if first time, should be true
     BEGIN: 0.0          # Experiment-specific: training split start
     END: 0.8            # Experiment-specific: training split end
     PREPROCESS:
@@ -34,7 +33,6 @@ TRAIN:
 VALID:
   DATA:
     DATASET: UBFC-rPPG  # Same dataset as training
-    DO_PREPROCESS: True  # Override: if first time, should be true
     BEGIN: 0.8          # Experiment-specific: validation split start
     END: 1.0            # Experiment-specific: validation split end
     PREPROCESS:
@@ -49,7 +47,6 @@ TEST:
   USE_LAST_EPOCH: false
   DATA:
     DATASET: PURE  # Different dataset for cross-dataset testing
-    DO_PREPROCESS: true  # Override: if first time, should be true
     BEGIN: 0.0          # Experiment-specific: test split start
     END: 1.0            # Experiment-specific: test split end
     PREPROCESS:

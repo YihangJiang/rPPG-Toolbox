@@ -14,6 +14,9 @@ TEST:
       DATA_TYPE: ['DiffNormalized', 'Standardized']  # Must match training config (DeepPhys uses both like TSCAN)
       LABEL_TYPE: DiffNormalized  # Must match training config
       CHUNK_LENGTH: 240  # Must match training config TEST section
+      RESIZE:
+        H: 96  # DeepPhys supports: 36, 72, or 96 (must match training config)
+        W: 96  # DeepPhys supports: 36, 72, or 96 (must match training config)
       # Note: Other settings will come from PURE dataset template:
       # - DATA_AUG: ['None'] (from template)
       # - BACKEND: 'HC' (from template, training config doesn't override)
@@ -28,5 +31,5 @@ MODEL:
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: FFT        # "FFT" or "peak detection"
-  MODEL_PATH: "/home/yj167/Desktop/rPPG-Toolbox/scripts/train_runs/exp/UBFC-rPPG_ClipLength180_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW128_SizeH128/PreTrainedModels/Best_DeepPhys.pth"
+  MODEL_PATH: "/home/yj167/Desktop/rPPG-Toolbox/scripts/train_runs/exp/UBFC-rPPG_ClipLength180_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW96_SizeH96/PreTrainedModels/Best_DeepPhys.pth"
   # Using Best_DeepPhys.pth (best validation performance model)

@@ -29,7 +29,4 @@ DATA_TEMPLATE:
         DO_DYNAMIC_DETECTION: False
         DYNAMIC_DETECTION_FREQUENCY: 30
         USE_MEDIAN_FACE_BOX: False
-    RESIZE:
-      H: 96 
-      W: 96
 
