@@ -1,9 +1,16 @@
 # %%
-from pathlib import Path
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
 # %reload_ext autoreload
 # %autoreload 2
+import sys
+from pathlib import Path
+import os
+
+# Add project root to Python path for imports (needed when running in Jupyter/IPython)
+script_dir = Path(__file__).parent if '__file__' in globals() else Path.cwd() / 'scripts'
+project_root = script_dir.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 import types
 from config import get_config
 from dataset import data_loader
@@ -33,9 +40,12 @@ def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2 ** 32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
+
 # %%
 args = types.SimpleNamespace()
-args.config_file = "../configs/infer_configs/UBFC-rPPG_PURE_TSCAN_BASIC.yaml"
+# Use path relative to script location to avoid working directory issues
+# (project_root already calculated above)
+args.config_file = str(project_root / "configs" / "infer_configs" / "UBFC-rPPG_PURE_TSCAN_BASIC.yaml")
 config = get_config(args)
 print('Configuration:')
 print(config, end='\n\n')
@@ -53,8 +63,10 @@ def test(config, data_loader_dict):
         print("TSCAN tester initialized")
     elif config.MODEL.NAME == "EfficientPhys":
         model_trainer = trainer.EfficientPhysTrainer.EfficientPhysTrainer(config, data_loader_dict)
+        print("EfficientPhys tester initialized")
     elif config.MODEL.NAME == 'DeepPhys':
         model_trainer = trainer.DeepPhysTrainer.DeepPhysTrainer(config, data_loader_dict)
+        print("DeepPhys tester initialized")
     elif config.MODEL.NAME == 'BigSmall':
         model_trainer = trainer.BigSmallTrainer.BigSmallTrainer(config, data_loader_dict)
     elif config.MODEL.NAME == 'PhysFormer':
@@ -64,6 +76,7 @@ def test(config, data_loader_dict):
     else:
         raise ValueError('Your Model is Not Supported Yet!')
     model_trainer.test(data_loader_dict)
+
 # %%
 test_loader = data_loader.PURELoader.PURELoader
 if config.TEST.DATA.DATASET and config.TEST.DATA.DATA_PATH:
@@ -82,8 +95,9 @@ if config.TEST.DATA.DATASET and config.TEST.DATA.DATA_PATH:
     )
 else:
     data_loader_dict['test'] = None
+
 # %%
-print("Starting TSCAN face testing on PURE dataset (trained on UBFC-rPPG)...")
+print("Starting TSCAN none_face testing on PURE dataset (trained on UBFC-rPPG)...")
 print("=" * 80)
 test(config, data_loader_dict)
 print("=" * 80)
