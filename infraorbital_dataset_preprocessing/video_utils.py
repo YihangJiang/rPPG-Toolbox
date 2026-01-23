@@ -832,5 +832,30 @@ def get_ubfc_paths(src_root, dst_root):
 
     return list_src, list_dst
 
+def get_pure_paths(src_root, dst_root):
+    """
+    Get PURE dataset video paths.
+    PURE dataset structure: src_root/01-01/01-01/ (PNG frames) or video files
+    This function looks for video files (.avi, .mp4) in the PURE dataset structure.
+    If videos are stored as PNG sequences, they should be converted to video files first.
+    """
+    list_src, list_dst = [], []
+    
+    # Look for video files (.avi, .mp4) in the PURE dataset structure
+    for root, dirs, files in os.walk(src_root):
+        for file in files:
+            if file.endswith((".avi", ".mp4")):
+                src_path = os.path.join(root, file)
+                
+                # Compute relative path from source root
+                rel_path = os.path.relpath(src_path, src_root)
+                
+                # Compute corresponding destination path
+                dst_path = os.path.join(dst_root, rel_path)
+                list_src.append(os.path.join(src_root, rel_path))
+                list_dst.append(dst_path)
+    
+    return list_src, list_dst
+
 
   
