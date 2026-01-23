@@ -7,8 +7,8 @@ import os
 from video_utils import *
 import mediapipe as mp
 
-src_root = "/hpc/group/dunnlab/rppg_data/data/DATASET_2"
-dst_root = "/work/yj167/DATASET_2IN"
+src_root = "/mnt/nvme2/rppg_data/DATASET_2"
+dst_root = "/mnt/nvme2/rppg_data/DATASET_2IN"
 list_rppg1, list_rppg2 = get_ubfc_paths(src_root, dst_root)
 
 for i in range(len(list_rppg1)):

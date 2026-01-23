@@ -156,8 +156,27 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
     Warps the specified region from each frame and saves a 320x320 video of the warped patches.
     If the face is not detected in a frame, a black frame is written and its index is saved to a CSV.
     """
+    # Ensure output path is absolute
+    output_video_path = os.path.abspath(output_video_path)
+    
+    # Ensure output directory exists
+    output_dir = os.path.dirname(output_video_path)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+        print(f"Created output directory: {output_dir}")
+    
+    # Ensure output path has proper extension
+    if not output_video_path.lower().endswith(('.avi', '.mp4')):
+        # Default to .mp4 if no extension
+        output_video_path = output_video_path + '.mp4'
+    
     # Open input video
-    missed_frames_df = pd.read_csv('./missed_frames.csv', index_col=[0])
+    # Handle missing CSV file
+    csv_path = './missed_frames.csv'
+    if os.path.exists(csv_path):
+        missed_frames_df = pd.read_csv(csv_path, index_col=[0])
+    else:
+        missed_frames_df = pd.DataFrame(columns=['file_path', 'missed_frame'])
     cap = cv2.VideoCapture(input_video_path)
     if not cap.isOpened():
         print("Error opening video file.")
@@ -165,8 +184,50 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
 
     # Get video properties
     fps = cap.get(cv2.CAP_PROP_FPS)
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    if fps <= 0:
+        fps = 30.0  # Default FPS if not available
+    
+    # Use mp4v codec for better compatibility (works with .mp4 extension)
+    if output_video_path.lower().endswith('.mp4'):
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    else:
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    
     out_writer = cv2.VideoWriter(output_video_path, fourcc, fps, output_size)
+    
+    # Verify VideoWriter is initialized
+    if not out_writer.isOpened():
+        print(f"Error: Could not initialize VideoWriter for {output_video_path}")
+        print(f"Trying alternative codecs...")
+        # Try different codecs as fallback
+        codecs_to_try = [
+            ('mp4v', '.mp4'),
+            ('H264', '.mp4'),
+            ('X264', '.mp4'),
+            ('MJPG', '.avi'),
+        ]
+        
+        success = False
+        for codec_name, ext in codecs_to_try:
+            # Change extension if needed
+            if not output_video_path.lower().endswith(ext):
+                output_video_path = os.path.splitext(output_video_path)[0] + ext
+            
+            fourcc = cv2.VideoWriter_fourcc(*codec_name)
+            out_writer = cv2.VideoWriter(output_video_path, fourcc, fps, output_size)
+            if out_writer.isOpened():
+                print(f"Successfully initialized VideoWriter with {codec_name} codec")
+                success = True
+                break
+            else:
+                out_writer.release()
+        
+        if not success:
+            print(f"Error: Could not initialize VideoWriter with any codec.")
+            print(f"Output path: {output_video_path}")
+            print(f"Output size: {output_size}, FPS: {fps}")
+            cap.release()
+            return
 
     print(f"Output video will be: {output_size[0]}x{output_size[1]} at {fps} FPS")
 

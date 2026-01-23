@@ -9,20 +9,20 @@ import os
 import mediapipe as mp
 from video_utils import *
 
-src_root = "/work/yj167/DATASET_1"
-dst_root = "/work/yj167/DATASET_1IN"
+src_root = "/mnt/nvme2/rppg_data/ubfc_phys"
+dst_root = "/mnt/nvme2/rppg_data/ubfc_phys_IN"
 
 list_phys1, list_phys2 = get_ubfc_paths(src_root, dst_root)
 
 # %%
 list_phys1 = [
     f for f in list_phys1
-    if int(f.split('/')[4][1:]) < 30
+    if int(f.split('/')[5][1:]) < 30
 ]
 
 list_phys2 = [
     f for f in list_phys2
-    if int(f.split('/')[4][1:]) < 30
+    if int(f.split('/')[5][1:]) < 30
 
 ]
 
