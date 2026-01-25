@@ -1,0 +1,33 @@
+# UBFC-PHYS Infraorbital Dataset Configuration
+# ONLY dataset-specific settings (preprocessing, paths, formats, filtering)
+# NO experiment-specific settings (BEGIN, END, etc.)
+# This is for the infraorbital preprocessed dataset (ubfc_phys_IN)
+
+DATA_TEMPLATE:
+  FS: 35
+  DATASET: UBFC-PHYS
+  DO_PREPROCESS: False
+  DATA_FORMAT: NDCHW
+  DATA_PATH: "/mnt/nvme2/rppg_data/ubfc_phys_IN"
+  CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE"
+  EXP_DATA_NAME: ""
+  FILTERING:
+    USE_EXCLUSION_LIST: True
+    EXCLUSION_LIST: ['s3_T1']
+    SELECT_TASKS: True
+    TASK_LIST: ['T1', 'T2']
+  PREPROCESS:
+    DATA_TYPE: ['DiffNormalized', 'Standardized']
+    LABEL_TYPE: DiffNormalized
+    DO_CHUNK: True
+    CHUNK_LENGTH: 700
+    CROP_FACE:
+      DO_CROP_FACE: False  # Already cropped to infraorbital region
+      BACKEND: 'HC'
+      USE_LARGE_FACE_BOX: True
+      LARGE_BOX_COEF: 1.5
+      DETECTION:
+        DO_DYNAMIC_DETECTION: False
+        DYNAMIC_DETECTION_FREQUENCY: 30
+        USE_MEDIAN_FACE_BOX: False
+

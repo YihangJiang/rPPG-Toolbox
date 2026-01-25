@@ -23,8 +23,11 @@ def load_dataset_config(dataset_name):
     # Map dataset names to config file names
     dataset_file_map = {
         'UBFC-rPPG': 'ubfc_rppg.yaml',
+        'UBFC-rPPG-IN': 'ubfc_rppg_in.yaml',  # Infraorbital variant
         'UBFC-PHYS': 'ubfc_phys.yaml',
+        'UBFC-PHYS-IN': 'ubfc_phys_in.yaml',  # Infraorbital variant
         'PURE': 'pure.yaml',
+        'PURE-IN': 'pure_in.yaml',  # Infraorbital variant (if exists)
         'SCAMPS': 'scamps.yaml',
         'MMPD': 'mmpd.yaml',
         'BP4DPlus': 'bp4dplus.yaml',

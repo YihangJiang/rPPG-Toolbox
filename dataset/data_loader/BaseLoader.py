@@ -25,6 +25,9 @@ import pandas as pd
 from torch.utils.data import Dataset
 from tqdm import tqdm
 from retinaface import RetinaFace   # Source code: https://github.com/serengil/retinaface
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend for saving files
+import matplotlib.pyplot as plt
 
 
 class BaseLoader(Dataset):
@@ -92,10 +95,156 @@ class BaseLoader(Dataset):
         """Returns the length of the dataset."""
         return len(self.inputs)
 
+    def _visualize_frame_comparison(self, data, index, color_channel=None):
+        """Visualize DiffNormalized vs Standardized frame comparison.
+        
+        Args:
+            data: Video chunk array (T, H, W, C) - can be after COLOR_CHANNEL extraction
+            index: Index of the data sample
+            color_channel: Optional color channel name ('R', 'G', 'B') if single channel extraction was applied
+        """
+        try:
+            # Extract a random frame from the chunk
+            num_frames = data.shape[0]
+            frame_idx = num_frames // 2  # Use middle frame
+            frame = data[frame_idx]  # (H, W, C)
+            
+            num_channels = frame.shape[-1] if len(frame.shape) > 2 else 1
+            
+            # Normalize for display (handle negative values from standardization)
+            def normalize_for_display(img):
+                img = img.copy()
+                img_min = img.min()
+                img_max = img.max()
+                if img_max - img_min < 1e-8:
+                    return np.zeros_like(img)
+                img = (img - img_min) / (img_max - img_min + 1e-8)
+                return np.clip(img, 0, 1)
+            
+            # Handle different channel configurations
+            if num_channels == 6:
+                # Channels 0-2: DiffNormalized, 3-5: Standardized (RGB)
+                diff_frame = frame[:, :, 0:3]
+                std_frame = frame[:, :, 3:6]
+                diff_display = normalize_for_display(diff_frame)
+                std_display = normalize_for_display(std_frame)
+                cmap = None  # RGB color
+            elif num_channels == 3:
+                # Only one transformation - assume it's DiffNormalized (RGB)
+                diff_frame = frame[:, :, 0:3]
+                std_frame = frame[:, :, 0:3]  # Duplicate for comparison
+                diff_display = normalize_for_display(diff_frame)
+                std_display = normalize_for_display(std_frame)
+                cmap = None  # RGB color
+            elif num_channels == 2:
+                # Single channel extracted from both DiffNormalized and Standardized
+                # Channel 0: DiffNormalized, Channel 1: Standardized
+                diff_frame = frame[:, :, 0:1]  # (H, W, 1)
+                std_frame = frame[:, :, 1:2]  # (H, W, 1)
+                diff_display = normalize_for_display(diff_frame.squeeze(-1))  # (H, W)
+                std_display = normalize_for_display(std_frame.squeeze(-1))  # (H, W)
+                cmap = None  # Grayscale for single channel
+            elif num_channels == 1:
+                # Single channel (only one transformation)
+                single_frame = frame[:, :, 0]  # (H, W)
+                diff_display = normalize_for_display(single_frame)
+                std_display = normalize_for_display(single_frame)  # Duplicate for comparison
+                cmap = None  # Grayscale for single channel
+            else:
+                # Skip visualization if channel count is unexpected
+                return
+            
+            # Create side-by-side figure
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+            
+            # Display DiffNormalized frame
+            ax1.imshow(diff_display, cmap=cmap)
+            title1 = 'DiffNormalized'
+            if color_channel:
+                title1 += f' ({color_channel} channel)'
+            ax1.set_title(title1, fontsize=14, fontweight='bold')
+            ax1.axis('off')
+            
+            # Display Standardized frame
+            ax2.imshow(std_display, cmap=cmap)
+            title2 = 'Standardized'
+            if color_channel:
+                title2 += f' ({color_channel} channel)'
+            ax2.set_title(title2, fontsize=14, fontweight='bold')
+            ax2.axis('off')
+            
+            # Extract filename and chunk_id for title
+            item_path = self.inputs[index]
+            item_path_filename = item_path.split(os.sep)[-1]
+            split_idx = item_path_filename.rindex('_')
+            filename = item_path_filename[:split_idx]
+            chunk_id = item_path_filename[split_idx + 6:].split('.')[0]
+            
+            # Add overall title
+            title_suffix = f' | {color_channel} channel' if color_channel else ''
+            fig.suptitle(f'Video {filename} | Chunk {chunk_id} | Frame {frame_idx}{title_suffix}', 
+                        fontsize=16, fontweight='bold', y=0.98)
+            
+            # Save visualization
+            output_dir = os.path.join(self.cached_path, 'visualizations')
+            os.makedirs(output_dir, exist_ok=True)
+            output_path = os.path.join(output_dir, f'{filename}_chunk{chunk_id}_frame{frame_idx}_comparison.png')
+            plt.tight_layout(rect=[0, 0, 1, 0.96])
+            plt.savefig(output_path, dpi=150, bbox_inches='tight')
+            plt.close()
+            
+            print(f"Visualization saved to: {output_path}")
+            
+        except Exception as e:
+            # Silently fail if visualization fails (don't interrupt data loading)
+            pass
+
     def __getitem__(self, index):
         """Returns a clip of video(3,T,W,H) and it's corresponding signals(T)."""
         data = np.load(self.inputs[index])
         label = np.load(self.labels[index])
+        
+        # Track if COLOR_CHANNEL extraction is applied
+        color_channel_used = None
+        
+        # Extract specific RGB channel from preprocessed cached data if COLOR_CHANNEL is specified
+        # This extraction happens AFTER loading from cache, not during preprocessing
+        if hasattr(self.config_data.PREPROCESS, "COLOR_CHANNEL") and self.config_data.PREPROCESS.COLOR_CHANNEL:
+            ch = str(self.config_data.PREPROCESS.COLOR_CHANNEL).upper()
+            channel_map = {"R": 0, "G": 1, "B": 2}
+            if ch in channel_map:
+                color_channel_used = ch  # Track which channel is being used
+                ch_idx = channel_map[ch]  # 0 for R, 1 for G, 2 for B
+                # Extract the channel from preprocessed data
+                # Cached data structure depends on DATA_TYPE:
+                # - If DATA_TYPE = ['DiffNormalized', 'Standardized']: shape is (T, H, W, 6)
+                #   channels 0-2: DiffNormalized RGB, channels 3-5: Standardized RGB
+                # - If DATA_TYPE = ['Standardized'] or ['DiffNormalized']: shape is (T, H, W, 3)
+                #   channels 0-2: RGB
+                num_channels = data.shape[-1] if data.ndim >= 4 else 1
+                
+                if num_channels == 6:
+                    # Extract channel from both DiffNormalized and Standardized
+                    # Channel ch_idx from DiffNormalized (0-2) and ch_idx+3 from Standardized (3-5)
+                    data = np.stack([data[..., ch_idx], data[..., ch_idx + 3]], axis=-1)
+                    # Result: (T, H, W, 2) - [DiffNorm channel, Std channel]
+                elif num_channels == 3:
+                    # Extract single channel from RGB
+                    data = data[..., ch_idx:ch_idx + 1]
+                    # Result: (T, H, W, 1) - single channel
+                else:
+                    # For other channel counts, raise exception
+                    raise ValueError(
+                        f"Unexpected channel count {num_channels} when extracting COLOR_CHANNEL='{ch}'. "
+                        f"Data shape: {data.shape}, Expected: 3 or 6 channels. "
+                        f"Please ensure cached data matches the expected preprocessing configuration."
+                    )
+        
+        # Visualize DiffNormalized vs Standardized (AFTER channel extraction if COLOR_CHANNEL is set)
+        # Only visualize randomly (1% chance)
+        if data.ndim >= 4 and np.random.rand() < 0.01:
+            self._visualize_frame_comparison(data.copy(), index, color_channel=color_channel_used)
+        
         if self.data_format == 'NDCHW':
             data = np.transpose(data, (0, 3, 1, 2))
         elif self.data_format == 'NCDHW':
@@ -267,16 +416,6 @@ class BaseLoader(Dataset):
             config_preprocess.CROP_FACE.DETECTION.USE_MEDIAN_FACE_BOX,
             config_preprocess.RESIZE.W,
             config_preprocess.RESIZE.H)
-        # Optionally select a single RGB channel for training/testing, if requested
-        # COLOR_CHANNEL can be 'R', 'G', or 'B' and is defined under *.DATA.PREPROCESS in the config.
-        if hasattr(config_preprocess, "COLOR_CHANNEL"):
-            ch = str(config_preprocess.COLOR_CHANNEL).upper()
-            channel_map = {"R": 0, "G": 1, "B": 2}
-            if ch in channel_map:
-                ch_idx = channel_map[ch]
-                # Keep only the selected channel, maintain 4D shape (T, H, W, 1)
-                if frames.ndim == 4 and frames.shape[-1] >= 3:
-                    frames = frames[..., ch_idx:ch_idx + 1]
         # Check data transformation type
         data = list()  # Video data
         for data_type in config_preprocess.DATA_TYPE:

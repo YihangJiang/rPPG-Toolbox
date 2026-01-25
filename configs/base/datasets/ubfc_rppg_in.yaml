@@ -1,0 +1,27 @@
+# UBFC-rPPG Infraorbital Dataset Configuration
+# ONLY dataset-specific settings (preprocessing, paths, formats)
+# NO experiment-specific settings (BEGIN, END, etc.)
+# This is for the infraorbital preprocessed dataset (DATASET_2IN)
+
+DATA_TEMPLATE:
+  FS: 30
+  DATASET: UBFC-rPPG
+  DO_PREPROCESS: False
+  DATA_FORMAT: NDCHW
+  DATA_PATH: "/mnt/nvme2/rppg_data/DATASET_2IN"
+  CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE/"
+  EXP_DATA_NAME: ""
+  PREPROCESS:
+    DATA_AUG: ['None']
+    DO_CHUNK: True
+    CHUNK_LENGTH: 180
+    CROP_FACE:
+      DO_CROP_FACE: False  # Already cropped to infraorbital region
+      BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace
+      USE_LARGE_FACE_BOX: True
+      LARGE_BOX_COEF: 1.5
+      DETECTION:
+        DO_DYNAMIC_DETECTION: False
+        DYNAMIC_DETECTION_FREQUENCY: 30
+        USE_MEDIAN_FACE_BOX: False
+

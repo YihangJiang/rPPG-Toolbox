@@ -154,8 +154,9 @@ class DeepPhysTrainer(BaseTrainer):
         if self.config.TOOLBOX_MODE == "only_test":
             if not os.path.exists(self.config.INFERENCE.MODEL_PATH):
                 raise ValueError("Inference model path error! Please check INFERENCE.MODEL_PATH in your yaml.")
-            self.model.load_state_dict(torch.load(self.config.INFERENCE.MODEL_PATH))
             print("Testing uses pretrained model!")
+            print(f"Model path: {self.config.INFERENCE.MODEL_PATH}")
+            self.model.load_state_dict(torch.load(self.config.INFERENCE.MODEL_PATH))
         else:
             if self.config.TEST.USE_LAST_EPOCH:
                 last_epoch_model_path = os.path.join(
@@ -202,12 +203,18 @@ class DeepPhysTrainer(BaseTrainer):
             self.save_test_outputs(predictions, labels, self.config)
 
     def save_model(self, index, best=0):
-        """Save model checkpoint. If best=1, saves as Best_DeepPhys.pth"""
+        """Save model checkpoint. If best=1, saves as Best_DeepPhys.pth (or Best_DeepPhys_b.pth if COLOR_CHANNEL is set)"""
         if best:
             if not os.path.exists(self.model_dir):
                 os.makedirs(self.model_dir)
             print('Saved Best Model')
-            torch.save(self.model.state_dict(), os.path.join(self.model_dir, "Best_DeepPhys.pth"))
+            # Add COLOR_CHANNEL suffix to best model filename if set
+            model_filename = "Best_DeepPhys"
+            if hasattr(self.config.TRAIN.DATA.PREPROCESS, 'COLOR_CHANNEL') and self.config.TRAIN.DATA.PREPROCESS.COLOR_CHANNEL:
+                ch = str(self.config.TRAIN.DATA.PREPROCESS.COLOR_CHANNEL).upper()
+                if ch in ['R', 'G', 'B']:
+                    model_filename += f'_{ch.lower()}'
+            torch.save(self.model.state_dict(), os.path.join(self.model_dir, model_filename + '.pth'))
         else:
             if not os.path.exists(self.model_dir):
                 os.makedirs(self.model_dir)

@@ -396,8 +396,11 @@ def _load_dataset_template(config, dataset_name, data_section):
     # Map dataset names to config file names
     dataset_file_map = {
         'UBFC-rPPG': 'ubfc_rppg.yaml',
+        'UBFC-rPPG-IN': 'ubfc_rppg_in.yaml',  # Infraorbital variant
         'UBFC-PHYS': 'ubfc_phys.yaml',
+        'UBFC-PHYS-IN': 'ubfc_phys_in.yaml',  # Infraorbital variant
         'PURE': 'pure.yaml',
+        'PURE-IN': 'pure_in.yaml',  # Infraorbital variant (if exists)
         'SCAMPS': 'scamps.yaml',
         'MMPD': 'mmpd.yaml',
         'BP4DPlus': 'bp4dplus.yaml',
@@ -475,18 +478,15 @@ def update_config(config, args):
     config.defrost()
 
     # Support legacy configs that specify LOG.PATH instead of separate TRAIN/TEST paths
+    # Note: We ignore LOG.PATH for path construction to avoid nested structures
+    # Instead, we set TRAIN_PATH and TEST_PATH directly to the correct non-nested paths
     if hasattr(config.LOG, "PATH") and config.LOG.PATH:
-        base_log_path = config.LOG.PATH
-        # If base_log_path is relative, make it absolute relative to scripts folder
-        if not os.path.isabs(base_log_path):
-            # Ensure base_log_path is under scripts folder
-            if not base_log_path.startswith('scripts/'):
-                base_log_path = os.path.join('scripts', base_log_path)
-            base_log_path = os.path.join(project_root, base_log_path)
+        # Legacy configs may have LOG.PATH, but we don't use it to create nested paths
+        # Just ensure TRAIN_PATH and TEST_PATH are set correctly
         if config.LOG.TRAIN_PATH == "runs/exp" or not config.LOG.TRAIN_PATH:
-            config.LOG.TRAIN_PATH = os.path.join(base_log_path, "train_runs", "exp")
+            config.LOG.TRAIN_PATH = "scripts/train_runs/exp"
         if config.LOG.TEST_PATH == "runs/exp" or not config.LOG.TEST_PATH:
-            config.LOG.TEST_PATH = os.path.join(base_log_path, "test_runs", "exp")
+            config.LOG.TEST_PATH = "scripts/test_runs/exp"
     
     # Make TRAIN_PATH and TEST_PATH absolute if they're relative
     # Paths are placed under the scripts folder, relative to project root
@@ -529,7 +529,14 @@ def update_config(config, args):
                                         "SizeW{0}".format(str(config.TRAIN.DATA.PREPROCESS.RESIZE.W)),
                                         "SizeH{0}".format(str(config.TRAIN.DATA.PREPROCESS.RESIZE.H))
                                               ])
+    # Set CACHED_PATH using EXP_DATA_NAME without COLOR_CHANNEL suffix
+    # (cached data is always RGB, channel extraction happens at load time)
     config.TRAIN.DATA.CACHED_PATH = os.path.join(config.TRAIN.DATA.CACHED_PATH, config.TRAIN.DATA.EXP_DATA_NAME)
+    # Append COLOR_CHANNEL suffix to EXP_DATA_NAME for output folder names (train_runs/exp, test_runs/exp)
+    if hasattr(config.TRAIN.DATA.PREPROCESS, 'COLOR_CHANNEL') and config.TRAIN.DATA.PREPROCESS.COLOR_CHANNEL:
+        ch = str(config.TRAIN.DATA.PREPROCESS.COLOR_CHANNEL).upper()
+        if ch in ['R', 'G', 'B']:
+            config.TRAIN.DATA.EXP_DATA_NAME += f'_{ch.lower()}'
 
     name, ext = os.path.splitext(config.TRAIN.DATA.FILE_LIST_PATH)
     if not ext: # no file extension
@@ -566,7 +573,14 @@ def update_config(config, args):
                                           "SizeW{0}".format(str(config.VALID.DATA.PREPROCESS.RESIZE.W)),
                                           "SizeH{0}".format(str(config.VALID.DATA.PREPROCESS.RESIZE.H))
                                                 ])
+        # Set CACHED_PATH using EXP_DATA_NAME without COLOR_CHANNEL suffix
+        # (cached data is always RGB, channel extraction happens at load time)
         config.VALID.DATA.CACHED_PATH = os.path.join(config.VALID.DATA.CACHED_PATH, config.VALID.DATA.EXP_DATA_NAME)
+        # Append COLOR_CHANNEL suffix to EXP_DATA_NAME for output folder names
+        if hasattr(config.VALID.DATA.PREPROCESS, 'COLOR_CHANNEL') and config.VALID.DATA.PREPROCESS.COLOR_CHANNEL:
+            ch = str(config.VALID.DATA.PREPROCESS.COLOR_CHANNEL).upper()
+            if ch in ['R', 'G', 'B']:
+                config.VALID.DATA.EXP_DATA_NAME += f'_{ch.lower()}'
 
         name, ext = os.path.splitext(config.VALID.DATA.FILE_LIST_PATH)
         if not ext:  # no file extension
@@ -604,7 +618,14 @@ def update_config(config, args):
                                         "SizeW{0}".format(str(config.TEST.DATA.PREPROCESS.RESIZE.W)), 
                                         "SizeH{0}".format(str(config.TEST.DATA.PREPROCESS.RESIZE.H))
                                               ])
+    # Set CACHED_PATH using EXP_DATA_NAME without COLOR_CHANNEL suffix
+    # (cached data is always RGB, channel extraction happens at load time)
     config.TEST.DATA.CACHED_PATH = os.path.join(config.TEST.DATA.CACHED_PATH, config.TEST.DATA.EXP_DATA_NAME)
+    # Append COLOR_CHANNEL suffix to EXP_DATA_NAME for output folder names (train_runs/exp, test_runs/exp)
+    if hasattr(config.TEST.DATA.PREPROCESS, 'COLOR_CHANNEL') and config.TEST.DATA.PREPROCESS.COLOR_CHANNEL:
+        ch = str(config.TEST.DATA.PREPROCESS.COLOR_CHANNEL).upper()
+        if ch in ['R', 'G', 'B']:
+            config.TEST.DATA.EXP_DATA_NAME += f'_{ch.lower()}'
 
     name, ext = os.path.splitext(config.TEST.DATA.FILE_LIST_PATH)
     if not ext: # no file extension

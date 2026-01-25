@@ -10,6 +10,7 @@ import time
 import pandas as pd
 from scipy.signal import welch
 from scipy.fft import fft
+import glob
 
 
 DESIRED_HEIGHT = 480
@@ -151,85 +152,113 @@ def resize_and_show(image):
   plt.imshow(img)
   return img
 
-def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, region_name=None, output_size=(320, 320)):
+def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, region_name=None, output_size=(320, 320), is_png_sequence=False):
     """
     Warps the specified region from each frame and saves a 320x320 video of the warped patches.
     If the face is not detected in a frame, a black frame is written and its index is saved to a CSV.
+    For PNG sequences, saves individual PNG files instead of a video.
     """
-    # Ensure output path is absolute
-    output_video_path = os.path.abspath(output_video_path)
+    # Check if input is a directory (PNG sequence) or a file (video)
+    is_png_sequence = os.path.isdir(input_video_path)
     
-    # Ensure output directory exists
-    output_dir = os.path.dirname(output_video_path)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
-        print(f"Created output directory: {output_dir}")
-    
-    # Ensure output path has proper extension
-    if not output_video_path.lower().endswith(('.avi', '.mp4')):
-        # Default to .mp4 if no extension
-        output_video_path = output_video_path + '.mp4'
-    
-    # Open input video
     # Handle missing CSV file
     csv_path = './missed_frames.csv'
     if os.path.exists(csv_path):
         missed_frames_df = pd.read_csv(csv_path, index_col=[0])
     else:
         missed_frames_df = pd.DataFrame(columns=['file_path', 'missed_frame'])
-    cap = cv2.VideoCapture(input_video_path)
-    if not cap.isOpened():
-        print("Error opening video file.")
-        return
-
-    # Get video properties
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    if fps <= 0:
-        fps = 30.0  # Default FPS if not available
     
-    # Use mp4v codec for better compatibility (works with .mp4 extension)
-    if output_video_path.lower().endswith('.mp4'):
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    else:
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    
-    out_writer = cv2.VideoWriter(output_video_path, fourcc, fps, output_size)
-    
-    # Verify VideoWriter is initialized
-    if not out_writer.isOpened():
-        print(f"Error: Could not initialize VideoWriter for {output_video_path}")
-        print(f"Trying alternative codecs...")
-        # Try different codecs as fallback
-        codecs_to_try = [
-            ('mp4v', '.mp4'),
-            ('H264', '.mp4'),
-            ('X264', '.mp4'),
-            ('MJPG', '.avi'),
-        ]
+    if is_png_sequence:
+        # Handle PNG sequence - output should also be a directory
+        # Remove any video file extensions (.mp4, .avi) from the path
+        output_dir = os.path.abspath(output_video_path)
+        # Strip video extensions if present
+        if output_dir.lower().endswith(('.mp4', '.avi')):
+            output_dir = os.path.splitext(output_dir)[0]
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+            print(f"Created output directory: {output_dir}")
         
-        success = False
-        for codec_name, ext in codecs_to_try:
-            # Change extension if needed
-            if not output_video_path.lower().endswith(ext):
-                output_video_path = os.path.splitext(output_video_path)[0] + ext
-            
-            fourcc = cv2.VideoWriter_fourcc(*codec_name)
-            out_writer = cv2.VideoWriter(output_video_path, fourcc, fps, output_size)
-            if out_writer.isOpened():
-                print(f"Successfully initialized VideoWriter with {codec_name} codec")
-                success = True
-                break
-            else:
-                out_writer.release()
-        
-        if not success:
-            print(f"Error: Could not initialize VideoWriter with any codec.")
-            print(f"Output path: {output_video_path}")
-            print(f"Output size: {output_size}, FPS: {fps}")
-            cap.release()
+        png_files = sorted(glob.glob(os.path.join(input_video_path, '*.png')) + 
+                          glob.glob(os.path.join(input_video_path, '*.jpg')) +
+                          glob.glob(os.path.join(input_video_path, '*.jpeg')))
+        if not png_files:
+            print(f"Error: No PNG/JPG files found in {input_video_path}")
             return
+        
+        total_frames = len(png_files)
+        print(f"Found {total_frames} PNG frames in {input_video_path}")
+        print(f"Output directory: {output_dir} (PNG files will be saved here, NOT video)")
+    else:
+        # Handle video file
+        # Ensure output path is absolute
+        output_video_path = os.path.abspath(output_video_path)
+        
+        # Ensure output directory exists
+        output_dir = os.path.dirname(output_video_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+            print(f"Created output directory: {output_dir}")
+        
+        # Ensure output path has proper extension
+        if not output_video_path.lower().endswith(('.avi', '.mp4')):
+            # Default to .mp4 if no extension
+            output_video_path = output_video_path + '.mp4'
+        
+        cap = cv2.VideoCapture(input_video_path)
+        if not cap.isOpened():
+            print("Error opening video file.")
+            return
+        
+        # Get video properties
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        if fps <= 0:
+            fps = 30.0  # Default FPS if not available
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        # Use mp4v codec for better compatibility (works with .mp4 extension)
+        if output_video_path.lower().endswith('.mp4'):
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        else:
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        
+        out_writer = cv2.VideoWriter(output_video_path, fourcc, fps, output_size)
+        
+        # Verify VideoWriter is initialized
+        if not out_writer.isOpened():
+            print(f"Error: Could not initialize VideoWriter for {output_video_path}")
+            print(f"Trying alternative codecs...")
+            # Try different codecs as fallback
+            codecs_to_try = [
+                ('mp4v', '.mp4'),
+                ('H264', '.mp4'),
+                ('X264', '.mp4'),
+                ('MJPG', '.avi'),
+            ]
+            
+            success = False
+            for codec_name, ext in codecs_to_try:
+                # Change extension if needed
+                if not output_video_path.lower().endswith(ext):
+                    output_video_path = os.path.splitext(output_video_path)[0] + ext
+                
+                fourcc = cv2.VideoWriter_fourcc(*codec_name)
+                out_writer = cv2.VideoWriter(output_video_path, fourcc, fps, output_size)
+                if out_writer.isOpened():
+                    print(f"Successfully initialized VideoWriter with {codec_name} codec")
+                    success = True
+                    break
+                else:
+                    out_writer.release()
+            
+            if not success:
+                print(f"Error: Could not initialize VideoWriter with any codec.")
+                print(f"Output path: {output_video_path}")
+                print(f"Output size: {output_size}, FPS: {fps}")
+                cap.release()
+                return
 
-    print(f"Output video will be: {output_size[0]}x{output_size[1]} at {fps} FPS")
+        print(f"Output video will be: {output_size[0]}x{output_size[1]} at {fps} FPS")
 
     # Validate region
     if region_name not in region_names:
@@ -252,46 +281,100 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
     frame_idx = 0
 
     # Process frames
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+    if is_png_sequence:
+        # Process PNG sequence - save individual PNG files
+        for png_file in png_files:
+            frame = cv2.imread(png_file)
+            if frame is None:
+                print(f"Warning: Could not read {png_file}, skipping...")
+                frame_idx += 1
+                continue
+            
+            frame_idx += 1
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = face_mesh.process(rgb_frame)
 
-        frame_idx += 1
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = face_mesh.process(rgb_frame)
+            # Get output filename (same name as input)
+            input_filename = os.path.basename(png_file)
+            output_filepath = os.path.join(output_dir, input_filename)
 
-        frame_written = False
+            frame_written = False
 
-        if results.multi_face_landmarks:
-            for face_landmarks in results.multi_face_landmarks:
-                h, w, _ = frame.shape
+            if results.multi_face_landmarks:
+                for face_landmarks in results.multi_face_landmarks:
+                    h, w, _ = frame.shape
 
-                try:
-                    landmark_indices = [region_landmarks[i] for i in selected_points_in_roi]
-                    pts_src = np.float32([
-                        [face_landmarks.landmark[i].x * w, face_landmarks.landmark[i].y * h]
-                        for i in landmark_indices
-                    ])
+                    try:
+                        landmark_indices = [region_landmarks[i] for i in selected_points_in_roi]
+                        pts_src = np.float32([
+                            [face_landmarks.landmark[i].x * w, face_landmarks.landmark[i].y * h]
+                            for i in landmark_indices
+                        ])
 
-                    M = cv2.getPerspectiveTransform(pts_src, pts_dst)
-                    warped = cv2.warpPerspective(frame, M, output_size)
+                        M = cv2.getPerspectiveTransform(pts_src, pts_dst)
+                        warped = cv2.warpPerspective(frame, M, output_size)
 
-                    out_writer.write(warped)
-                    frame_written = True
-                    break  # Only write first detected face
-                except Exception as e:
-                    print(f"Frame {frame_idx}: Error warping region: {e}")
+                        # Save as PNG file (ensure .png extension)
+                        if not output_filepath.lower().endswith(('.png', '.jpg', '.jpeg')):
+                            output_filepath = os.path.splitext(output_filepath)[0] + '.png'
+                        cv2.imwrite(output_filepath, warped)
+                        frame_written = True
+                        break  # Only write first detected face
+                    except Exception as e:
+                        print(f"Frame {frame_idx}: Error warping region: {e}")
 
-        if not frame_written:
-            print(f"Frame {frame_idx}: No face detected.")
-            missed_frames.append(frame_idx)
-            black_frame = np.zeros((output_size[1], output_size[0], 3), dtype=np.uint8)
-            out_writer.write(black_frame)
+            if not frame_written:
+                print(f"Frame {frame_idx}: No face detected.")
+                missed_frames.append(frame_idx)
+                black_frame = np.zeros((output_size[1], output_size[0], 3), dtype=np.uint8)
+                # Ensure .png extension for black frame too
+                if not output_filepath.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    output_filepath = os.path.splitext(output_filepath)[0] + '.png'
+                cv2.imwrite(output_filepath, black_frame)
+    else:
+        # Process video file
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            frame_idx += 1
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = face_mesh.process(rgb_frame)
+
+            frame_written = False
+
+            if results.multi_face_landmarks:
+                for face_landmarks in results.multi_face_landmarks:
+                    h, w, _ = frame.shape
+
+                    try:
+                        landmark_indices = [region_landmarks[i] for i in selected_points_in_roi]
+                        pts_src = np.float32([
+                            [face_landmarks.landmark[i].x * w, face_landmarks.landmark[i].y * h]
+                            for i in landmark_indices
+                        ])
+
+                        M = cv2.getPerspectiveTransform(pts_src, pts_dst)
+                        warped = cv2.warpPerspective(frame, M, output_size)
+
+                        out_writer.write(warped)
+                        frame_written = True
+                        break  # Only write first detected face
+                    except Exception as e:
+                        print(f"Frame {frame_idx}: Error warping region: {e}")
+
+            if not frame_written:
+                print(f"Frame {frame_idx}: No face detected.")
+                missed_frames.append(frame_idx)
+                black_frame = np.zeros((output_size[1], output_size[0], 3), dtype=np.uint8)
+                out_writer.write(black_frame)
 
     # Clean up
-    cap.release()
-    out_writer.release()
+    if not is_png_sequence:
+        if cap is not None:
+            cap.release()
+        out_writer.release()
     face_mesh.close()
 
     # Save missed frame indices
@@ -306,7 +389,11 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
             missed_frames_df = missed_frames_df.sort_index()
     print(missed_frames_df)
     missed_frames_df.to_csv('./missed_frames.csv')
-    print(f"Warped region video saved to: {output_video_path}")
+    
+    if is_png_sequence:
+        print(f"Warped region PNGs saved to: {output_dir}")
+    else:
+        print(f"Warped region video saved to: {output_video_path}")
 
 
 
@@ -834,25 +921,37 @@ def get_ubfc_paths(src_root, dst_root):
 
 def get_pure_paths(src_root, dst_root):
     """
-    Get PURE dataset video paths.
-    PURE dataset structure: src_root/01-01/01-01/ (PNG frames) or video files
-    This function looks for video files (.avi, .mp4) in the PURE dataset structure.
-    If videos are stored as PNG sequences, they should be converted to video files first.
+    Get PURE dataset paths.
+    PURE dataset structure: src_root/01-01/01-01/ (PNG frames)
+    This function looks for directories containing PNG sequences.
+    Each directory of PNGs is treated as a "video".
     """
     list_src, list_dst = [], []
     
-    # Look for video files (.avi, .mp4) in the PURE dataset structure
+    # Track directories we've already added to avoid duplicates
+    added_dirs = set()
+    
+    # Look for directories containing PNG files
     for root, dirs, files in os.walk(src_root):
-        for file in files:
-            if file.endswith((".avi", ".mp4")):
-                src_path = os.path.join(root, file)
+        # Check if this directory contains PNG files
+        png_files = [f for f in files if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        
+        if png_files:
+            # This directory contains images, treat it as a video sequence
+            dir_path = root
+            
+            # Only add each directory once
+            if dir_path not in added_dirs:
+                added_dirs.add(dir_path)
                 
                 # Compute relative path from source root
-                rel_path = os.path.relpath(src_path, src_root)
+                rel_path = os.path.relpath(dir_path, src_root)
                 
                 # Compute corresponding destination path
+                # For PNG sequences, output should also be a directory (keep PNG structure)
                 dst_path = os.path.join(dst_root, rel_path)
-                list_src.append(os.path.join(src_root, rel_path))
+                
+                list_src.append(dir_path)
                 list_dst.append(dst_path)
     
     return list_src, list_dst

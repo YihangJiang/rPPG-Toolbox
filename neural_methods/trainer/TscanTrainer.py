@@ -269,7 +269,13 @@ class TscanTrainer(BaseTrainer):
     def save_model(self, index, best=0):
         if best:
             print('Saved Best Model')
-            torch.save(self.model.state_dict(), os.path.join(self.model_dir, "Best" + '_' + self.model_name + '.pth'))
+            # Add COLOR_CHANNEL suffix to best model filename if set
+            model_filename = "Best" + '_' + self.model_name
+            if hasattr(self.config.TRAIN.DATA.PREPROCESS, 'COLOR_CHANNEL') and self.config.TRAIN.DATA.PREPROCESS.COLOR_CHANNEL:
+                ch = str(self.config.TRAIN.DATA.PREPROCESS.COLOR_CHANNEL).upper()
+                if ch in ['R', 'G', 'B']:
+                    model_filename += f'_{ch.lower()}'
+            torch.save(self.model.state_dict(), os.path.join(self.model_dir, model_filename + '.pth'))
         else:
             if not os.path.exists(self.model_dir):
                 os.makedirs(self.model_dir)

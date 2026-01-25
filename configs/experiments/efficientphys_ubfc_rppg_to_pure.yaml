@@ -22,7 +22,7 @@ TRAIN:
     END: 0.8            # Experiment-specific: training split end
     PREPROCESS:
       DATA_TYPE: ['Standardized']  # EfficientPhys uses Standardized data
-      LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
+      LABE_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
       RESIZE:
         H: 96  # EfficientPhys only supports 36, 72, or 96

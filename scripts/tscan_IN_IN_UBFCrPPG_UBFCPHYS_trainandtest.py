@@ -38,8 +38,11 @@ def seed_worker(worker_id):
 # %%
 
 args = types.SimpleNamespace()
-# TSCAN rppg physc
-args.config_file = "/hpc/group/dunnlab/rppg_data/rPPG-Toolbox/configs/train_configs/UBFC-rPPG_UBFC-rPPG_UBFC-PHYS_TSCAN_IN.yaml"
+# TSCAN rppg physc (infraorbital)
+# Use relative path from script location
+script_dir = Path(__file__).parent.parent
+args.config_file = str(script_dir / "configs" / "experiments" / "tscan_ubfc_rppg_to_phys_in.yaml")
+print(f"Loading config from: {args.config_file}")
 # baseline
 config = get_config(args)
 print('Configuration:')
