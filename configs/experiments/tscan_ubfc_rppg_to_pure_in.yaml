@@ -1,9 +1,9 @@
-# Experiment: TSCAN model trained on UBFC-rPPG (infraorbital), tested on UBFC-PHYS (infraorbital)
-# This is the infraorbital version of tscan_ubfc_rppg_to_phys.yaml
+# Experiment: TSCAN model trained on UBFC-rPPG (infraorbital), tested on PURE (infraorbital)
+# This is the infraorbital version of tscan_ubfc_rppg_to_pure.yaml
 # 
 # MINIMAL CONFIG: Only experiment-specific settings!
 # All preprocessing, paths, formats auto-load from dataset templates.
-# DATA_PATH is determined by the dataset template (ubfc_rppg_in.yaml, ubfc_phys_in.yaml).
+# DATA_PATH is determined by the dataset template (ubfc_rppg_in.yaml, pure_in.yaml).
 
 BASE: ['../base/models/tscan.yaml']
 
@@ -14,7 +14,7 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 30
   LR: 9e-3
-  MODEL_FILE_NAME: tscan_ubfc_rppg_to_phys_in
+  MODEL_FILE_NAME: tscan_ubfc_rppg_to_pure_in
   PLOT_LOSSES_AND_LR: True
   DATA:
     DATASET: UBFC-rPPG-IN  # Dataset name triggers auto-load of infraorbital template
@@ -49,17 +49,16 @@ TEST:
   METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA']
   USE_LAST_EPOCH: false
   DATA:
-    DATASET: UBFC-PHYS-IN  # Different dataset for cross-dataset testing (infraorbital)
+    DATASET: PURE-IN  # Different dataset for cross-dataset testing (infraorbital)
     BEGIN: 0.0          # Experiment-specific: test split start
     END: 1.0            # Experiment-specific: test split end
     PREPROCESS:
       DATA_TYPE: ['DiffNormalized', 'Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
-      CHUNK_LENGTH: 240  # Override: template uses 700, but BASIC config uses 240
+      CHUNK_LENGTH: 240  # Override: template uses 180, but test uses 240
       # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
         H: 96  # Override: match training dataset size for model consistency
         W: 96  # Override: match training dataset size for model consistency
       # Note: This chunk length is also used for metrics evaluation (per-chunk metrics)
-
 

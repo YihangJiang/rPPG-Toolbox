@@ -10,7 +10,6 @@ TOOLBOX_MODE: "train_and_test"
 
 # Training configuration - ONLY experiment-specific settings
 TRAIN:
-  ROI: 'Face'
   BATCH_SIZE: 4
   EPOCHS: 30
   LR: 9e-3

@@ -1,24 +1,18 @@
 # %%
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
 # %reload_ext autoreload
 # %autoreload 2
-import sys
-from pathlib import Path
-
-# Add project root to Python path for imports (needed when running in Jupyter/IPython)
-script_dir = Path(__file__).parent if '__file__' in globals() else Path.cwd() / 'scripts'
-project_root = script_dir.parent
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
-
-
-from config import get_config
 import types
+from config import get_config
 from dataset import data_loader
 import numpy as np
 import torch
 import random
 from torch.utils.data import DataLoader
 from neural_methods import trainer
+from neural_methods.trainer import CNNRNNTrainer
 
 RANDOM_SEED = 100
 torch.manual_seed(RANDOM_SEED)
@@ -41,26 +35,18 @@ def seed_worker(worker_id):
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 
+# %%
+
 args = types.SimpleNamespace()
-# DeepPhys rppg pure - using minimal hierarchical config
-# Use path relative to script location to avoid working directory issues
-# (project_root already calculated above)
-args.config_file = str(project_root / "configs" / "experiments" / "deepphys_ubfc_rppg_to_pure.yaml")
+# DeepPhys rppg pure (infraorbital)
+# Use relative path from script location
+script_dir = Path(__file__).parent.parent
+args.config_file = str(script_dir / "configs" / "experiments" / "deepphys_ubfc_rppg_to_pure_in.yaml")
+print(f"Loading config from: {args.config_file}")
 # baseline
 config = get_config(args)
 print('Configuration:')
 print(config, end='\n\n')
-
-# Print chunk lengths
-print("=" * 80)
-print("CHUNK LENGTHS:")
-print(f"  TRAIN CHUNK_LENGTH: {config.TRAIN.DATA.PREPROCESS.CHUNK_LENGTH}")
-print(f"  VALID CHUNK_LENGTH: {config.VALID.DATA.PREPROCESS.CHUNK_LENGTH}")
-print(f"  TEST CHUNK_LENGTH:  {config.TEST.DATA.PREPROCESS.CHUNK_LENGTH}")
-print("=" * 80)
-print()
-
-# %%
 data_loader_dict = dict()
 
 def train(config, data_loader_dict):
@@ -71,19 +57,19 @@ def train(config, data_loader_dict):
         model_trainer = trainer.iBVPNetTrainer.iBVPNetTrainer(config, data_loader_dict)
     elif config.MODEL.NAME == "Tscan":
         model_trainer = trainer.TscanTrainer.TscanTrainer(config, data_loader_dict)
-        print("TSCAN started")
+        print("TSCAN called")
     elif config.MODEL.NAME == "EfficientPhys":
         model_trainer = trainer.EfficientPhysTrainer.EfficientPhysTrainer(config, data_loader_dict)
     elif config.MODEL.NAME == 'DeepPhys':
         model_trainer = trainer.DeepPhysTrainer.DeepPhysTrainer(config, data_loader_dict)
-        print("DeepPhys started")
+        print("DeepPhys called")
     elif config.MODEL.NAME == 'BigSmall':
         model_trainer = trainer.BigSmallTrainer.BigSmallTrainer(config, data_loader_dict)
     elif config.MODEL.NAME == 'PhysFormer':
         model_trainer = trainer.PhysFormerTrainer.PhysFormerTrainer(config, data_loader_dict)
     elif config.MODEL.NAME == 'cnnrnn':
         model_trainer = trainer.CNNRNNTrainer.CNNRNNTrainer(config, data_loader_dict) 
-        print("baseline trainer started")
+        print("cnnrnn called")
     else:
         raise ValueError('Your Model is Not Supported  Yet!')
     model_trainer.train(data_loader_dict)

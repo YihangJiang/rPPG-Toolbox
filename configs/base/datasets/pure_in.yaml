@@ -1,15 +1,15 @@
-# UBFC-rPPG Infraorbital Dataset Configuration
+# PURE Infraorbital Dataset Configuration
 # ONLY dataset-specific settings (preprocessing, paths, formats)
 # NO experiment-specific settings (BEGIN, END, etc.)
-# This is for the infraorbital preprocessed dataset (DATASET_2IN)
+# This is for the infraorbital preprocessed dataset (DATASET_3IN)
 
 DATA_TEMPLATE:
   FS: 30
-  DATASET: UBFC-rPPG-IN
+  DATASET: PURE-IN
   DO_PREPROCESS: False 
   DATA_FORMAT: NDCHW
-  DATA_PATH: "/mnt/nvme2/rppg_data/DATASET_2IN"
-  CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE/"
+  DATA_PATH: "/mnt/nvme2/rppg_data/DATASET_3IN"
+  CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE"
   EXP_DATA_NAME: ""
   PREPROCESS:
     DATA_AUG: ['None']

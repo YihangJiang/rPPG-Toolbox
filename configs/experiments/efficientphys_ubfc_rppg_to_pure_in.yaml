@@ -1,8 +1,9 @@
-# Experiment: EfficientPhys model trained on UBFC-rPPG, tested on PURE
-# This replaces: UBFC-rPPG_UBFC-rPPG_PURE_EFFICIENTPHYS.yaml
+# Experiment: EfficientPhys model trained on UBFC-rPPG (infraorbital), tested on PURE (infraorbital)
+# This is the infraorbital version of efficientphys_ubfc_rppg_to_pure.yaml
 # 
 # MINIMAL CONFIG: Only experiment-specific settings!
 # All preprocessing, paths, formats auto-load from dataset templates.
+# DATA_PATH is determined by the dataset template (ubfc_rppg_in.yaml, pure_in.yaml).
 
 BASE: ['../base/models/efficientphys.yaml']
 
@@ -13,16 +14,17 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 30
   LR: 9e-3
-  MODEL_FILE_NAME: UBFC_UBFC_PURE_efficientphys
+  MODEL_FILE_NAME: efficientphys_ubfc_rppg_to_pure_in
   PLOT_LOSSES_AND_LR: True
   DATA:
-    DATASET: UBFC-rPPG  # Dataset name triggers auto-load of all preprocessing/paths
+    DATASET: UBFC-rPPG-IN  # Dataset name triggers auto-load of infraorbital template
     BEGIN: 0.0          # Experiment-specific: training split start
     END: 0.8            # Experiment-specific: training split end
     PREPROCESS:
       DATA_TYPE: ['Standardized']  # EfficientPhys uses Standardized data
-      LABE_TYPE: DiffNormalized  # Use DiffNormalized labels
-      CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
+      LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
+      CHUNK_LENGTH: 180  # Override: template uses 180 for infraorbital
+      # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match across TRAIN/VALID/TEST)
       RESIZE:
         H: 96  # EfficientPhys only supports 36, 72, or 96
         W: 96
@@ -30,13 +32,14 @@ TRAIN:
 # Validation configuration - ONLY experiment-specific settings
 VALID:
   DATA:
-    DATASET: UBFC-rPPG  # Same dataset as training
+    DATASET: UBFC-rPPG-IN  # Same dataset as training (infraorbital)
     BEGIN: 0.8          # Experiment-specific: validation split start
     END: 1.0            # Experiment-specific: validation split end
     PREPROCESS:
       DATA_TYPE: ['Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
-      CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
+      CHUNK_LENGTH: 180  # Override: template uses 180 for infraorbital
+      # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
         H: 96  # EfficientPhys only supports 36, 72, or 96
         W: 96
@@ -46,13 +49,14 @@ TEST:
   METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA']
   USE_LAST_EPOCH: false
   DATA:
-    DATASET: PURE  # Different dataset for cross-dataset testing
+    DATASET: PURE-IN  # Different dataset for cross-dataset testing (infraorbital)
     BEGIN: 0.0          # Experiment-specific: test split start
     END: 1.0            # Experiment-specific: test split end
     PREPROCESS:
       DATA_TYPE: ['Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
-      CHUNK_LENGTH: 240 # Override: template uses 700, but BASIC config uses 180
+      CHUNK_LENGTH: 240  # Override: template uses 180, but test uses 240
+      # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
         H: 96  # EfficientPhys only supports 36, 72, or 96
         W: 96

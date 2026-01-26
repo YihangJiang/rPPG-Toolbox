@@ -1,11 +1,11 @@
-# Experiment: TSCAN model trained on UBFC-rPPG (infraorbital), tested on UBFC-PHYS (infraorbital)
-# This is the infraorbital version of tscan_ubfc_rppg_to_phys.yaml
+# Experiment: DeepPhys model trained on UBFC-rPPG (infraorbital), tested on UBFC-PHYS (infraorbital)
+# This is the infraorbital version of deepphys_ubfc_rppg_to_phys.yaml
 # 
 # MINIMAL CONFIG: Only experiment-specific settings!
 # All preprocessing, paths, formats auto-load from dataset templates.
 # DATA_PATH is determined by the dataset template (ubfc_rppg_in.yaml, ubfc_phys_in.yaml).
 
-BASE: ['../base/models/tscan.yaml']
+BASE: ['../base/models/deepphys.yaml']
 
 TOOLBOX_MODE: "train_and_test"
 
@@ -14,20 +14,20 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 30
   LR: 9e-3
-  MODEL_FILE_NAME: tscan_ubfc_rppg_to_phys_in
+  MODEL_FILE_NAME: deepphys_ubfc_rppg_to_phys_in
   PLOT_LOSSES_AND_LR: True
   DATA:
     DATASET: UBFC-rPPG-IN  # Dataset name triggers auto-load of infraorbital template
     BEGIN: 0.0          # Experiment-specific: training split start
     END: 0.8            # Experiment-specific: training split end
     PREPROCESS:
-      DATA_TYPE: ['DiffNormalized', 'Standardized']
+      DATA_TYPE: ['DiffNormalized', 'Standardized']  # DeepPhys uses both like TSCAN
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 180  # Override: template uses 180 for infraorbital
       # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match across TRAIN/VALID/TEST)
       RESIZE:
-        H: 96  # Explicitly set resize dimensions
-        W: 96  # Explicitly set resize dimensions
+        H: 96  # DeepPhys supports: 36, 72, or 96
+        W: 96  # DeepPhys supports: 36, 72, or 96
 
 # Validation configuration - ONLY experiment-specific settings
 VALID:
@@ -41,8 +41,8 @@ VALID:
       CHUNK_LENGTH: 180  # Override: template uses 180 for infraorbital
       # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
-        H: 96  # Explicitly set resize dimensions
-        W: 96  # Explicitly set resize dimensions
+        H: 96  # DeepPhys supports: 36, 72, or 96
+        W: 96  # DeepPhys supports: 36, 72, or 96
 
 # Test configuration - ONLY experiment-specific settings
 TEST:
@@ -58,8 +58,7 @@ TEST:
       CHUNK_LENGTH: 240  # Override: template uses 700, but BASIC config uses 240
       # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
-        H: 96  # Override: match training dataset size for model consistency
-        W: 96  # Override: match training dataset size for model consistency
+        H: 96  # DeepPhys supports: 36, 72, or 96 (must match TRAIN)
+        W: 96  # DeepPhys supports: 36, 72, or 96 (must match TRAIN)
       # Note: This chunk length is also used for metrics evaluation (per-chunk metrics)
-
 
