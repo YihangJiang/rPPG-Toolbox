@@ -45,6 +45,16 @@ class EfficientPhys(nn.Module):
 
     def __init__(self, in_channels=3, nb_filters1=32, nb_filters2=64, kernel_size=3, dropout_rate1=0.25,
                  dropout_rate2=0.5, pool_size=(2, 2), nb_dense=128, frame_depth=20, img_size=36, channel='raw'):
+        """Definition of EfficientPhys.
+        Args:
+          in_channels: the number of input channels. 
+                       Default: 3 (for 3 RGB channels × 1 transform).
+                       Use 1 for single channel (1 RGB × 1 transform) when COLOR_CHANNEL is set.
+                       Use 2 for single channel with 2 transforms (1 RGB × 2 transforms).
+          img_size: height/width of each frame. Default: 36.
+        Returns:
+          EfficientPhys model.
+        """
         super(EfficientPhys, self).__init__()
         self.in_channels = in_channels
         self.kernel_size = kernel_size
@@ -90,7 +100,7 @@ class EfficientPhys(nn.Module):
         else:
             raise Exception('Unsupported image size')
         self.final_dense_2 = nn.Linear(self.nb_dense, 1, bias=True)
-        self.batch_norm = nn.BatchNorm2d(3)
+        self.batch_norm = nn.BatchNorm2d(self.in_channels)  # Use in_channels instead of hardcoded 3
         self.channel = channel
 
     def forward(self, inputs, params=None):

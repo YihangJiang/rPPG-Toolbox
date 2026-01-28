@@ -24,7 +24,7 @@ TRAIN:
       DATA_TYPE: ['Standardized']  # EfficientPhys uses Standardized data
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 180  # Override: template uses 180 for infraorbital
-      # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match across TRAIN/VALID/TEST)
+      COLOR_CHANNEL: 'G'  # Extract single channel: 'R', 'G', or 'B' (must match across TRAIN/VALID/TEST)
       RESIZE:
         H: 96  # EfficientPhys only supports 36, 72, or 96
         W: 96
@@ -39,7 +39,7 @@ VALID:
       DATA_TYPE: ['Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 180  # Override: template uses 180 for infraorbital
-      # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
+      COLOR_CHANNEL: 'G'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
         H: 96  # EfficientPhys only supports 36, 72, or 96
         W: 96
@@ -56,7 +56,7 @@ TEST:
       DATA_TYPE: ['Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 240  # Override: template uses 180, but test uses 240
-      # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
+      COLOR_CHANNEL: 'G'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
         H: 96  # EfficientPhys only supports 36, 72, or 96
         W: 96

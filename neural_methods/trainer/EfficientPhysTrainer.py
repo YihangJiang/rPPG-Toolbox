@@ -34,7 +34,12 @@ class EfficientPhysTrainer(BaseTrainer):
         self.best_epoch = 0
         
         if config.TOOLBOX_MODE == "train_and_test":
-            self.model = EfficientPhys(frame_depth=self.frame_depth, img_size=config.TRAIN.DATA.PREPROCESS.RESIZE.H).to(
+            # Determine input channels from config
+            # If COLOR_CHANNEL is set, use 1 RGB channel, otherwise 3 RGB channels
+            num_rgb_channels = 1 if hasattr(config.TRAIN.DATA.PREPROCESS, 'COLOR_CHANNEL') and config.TRAIN.DATA.PREPROCESS.COLOR_CHANNEL else 3
+            num_transformations = len(config.TRAIN.DATA.PREPROCESS.DATA_TYPE)
+            in_channels = num_rgb_channels * num_transformations
+            self.model = EfficientPhys(in_channels=in_channels, frame_depth=self.frame_depth, img_size=config.TRAIN.DATA.PREPROCESS.RESIZE.H).to(
                 self.device)
             self.model = torch.nn.DataParallel(self.model, device_ids=list(range(config.NUM_OF_GPU_TRAIN)))
 
@@ -46,7 +51,11 @@ class EfficientPhysTrainer(BaseTrainer):
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 self.optimizer, max_lr=config.TRAIN.LR, epochs=config.TRAIN.EPOCHS, steps_per_epoch=self.num_train_batches)
         elif config.TOOLBOX_MODE == "only_test":
-            self.model = EfficientPhys(frame_depth=self.frame_depth, img_size=config.TEST.DATA.PREPROCESS.RESIZE.H).to(
+            # Determine input channels from config
+            num_rgb_channels = 1 if hasattr(config.TEST.DATA.PREPROCESS, 'COLOR_CHANNEL') and config.TEST.DATA.PREPROCESS.COLOR_CHANNEL else 3
+            num_transformations = len(config.TEST.DATA.PREPROCESS.DATA_TYPE)
+            in_channels = num_rgb_channels * num_transformations
+            self.model = EfficientPhys(in_channels=in_channels, frame_depth=self.frame_depth, img_size=config.TEST.DATA.PREPROCESS.RESIZE.H).to(
                 self.device)
             self.model = torch.nn.DataParallel(self.model, device_ids=list(range(config.NUM_OF_GPU_TRAIN)))
         else:

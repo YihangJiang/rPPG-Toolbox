@@ -30,7 +30,9 @@ class DeepPhys(nn.Module):
                  dropout_rate2=0.5, pool_size=(2, 2), nb_dense=128, img_size=36):
         """Definition of DeepPhys.
         Args:
-          in_channels: the number of input channel. Default: 3
+          in_channels: the number of input channels per branch (motion/appearance). 
+                       Default: 3 (for 6 total channels: 3 RGB × 2 transforms).
+                       Use 1 for single channel (2 total: 1 RGB × 2 transforms).
           img_size: height/width of each frame. Default: 36.
         Returns:
           DeepPhys model.
@@ -84,9 +86,11 @@ class DeepPhys(nn.Module):
         self.final_dense_2 = nn.Linear(self.nb_dense, 1, bias=True)
 
     def forward(self, inputs, params=None):
-
-        diff_input = inputs[:, :3, :, :]
-        raw_input = inputs[:, 3:, :, :]
+        # Split input channels: first half for diff (motion branch), second half for raw (appearance branch)
+        # This allows flexible channel counts: 2 channels (1 RGB × 2 transforms) or 6 channels (3 RGB × 2 transforms)
+        num_channels_per_branch = inputs.shape[1] // 2
+        diff_input = inputs[:, :num_channels_per_branch, :, :]
+        raw_input = inputs[:, num_channels_per_branch:, :, :]
 
         d1 = torch.tanh(self.motion_conv1(diff_input))
         d2 = torch.tanh(self.motion_conv2(d1))

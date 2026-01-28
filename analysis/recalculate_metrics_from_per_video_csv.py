@@ -1,10 +1,11 @@
 # %%
 """
 
-Recalculate FFT metrics (MAE, RMSE, MAPE, Pearson) from saved CSV files.
+Recalculate FFT metrics (MAE, RMSE, MAPE, Pearson, SNR) from saved CSV files.
 
 This script reads the per-chunk metrics CSV file and recalculates the overall
-metrics that were printed during testing.
+metrics that were printed during testing. The calculations exactly match
+the implementation in evaluation/metrics.py to ensure consistency.
 """
 
 import pandas as pd
@@ -27,6 +28,11 @@ def recalculate_metrics_from_csv(csv_path):
     # Extract ground truth and predicted HR values
     gt_hr_fft_all = df['gt_hr'].values
     pred_hr_fft_all = df['pred_hr'].values
+    
+    # Extract SNR if available
+    snr_all = None
+    if 'SNR' in df.columns:
+        snr_all = df['SNR'].values
     
     num_test_samples = len(pred_hr_fft_all)
     
@@ -65,6 +71,15 @@ def recalculate_metrics_from_csv(csv_path):
     metrics['Pearson'] = {'value': pearson, 'se': pearson_se}
     print(f"FFT Pearson (FFT Label): {pearson} +/- {pearson_se}")
     
+    # SNR (Signal-to-Noise Ratio) - if available in CSV
+    if snr_all is not None:
+        snr_mean = np.mean(snr_all)
+        snr_se = np.std(snr_all) / np.sqrt(num_test_samples)
+        metrics['SNR'] = {'value': snr_mean, 'std': np.std(snr_all), 'se': snr_se}
+        print(f"FFT SNR (FFT Label): {snr_mean} +/- {snr_se} (dB)")
+    else:
+        print("FFT SNR (FFT Label): Not available (SNR column not found in CSV)")
+    
     # Additional statistics
     print("=" * 80)
     print(f"Number of chunks: {num_test_samples}")
@@ -81,8 +96,8 @@ def recalculate_metrics_from_csv(csv_path):
 script_dir = Path(__file__).parent if '__file__' in globals() else Path.cwd() / 'analysis'
 project_root = script_dir.parent
 csv_path = project_root / "scripts" / "test_runs" / "exp" / \
-           "PURE_ClipLength240_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW128_SizeH128" / \
-           "saved_test_outputs" / "UBFC_UBFC_PURE_tscan_per_chunk_metrics.csv"
+           "UBFC-PHYS-IN_ClipLength240_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW96_SizeH96_g" / \
+           "saved_test_outputs" / "deepphys_ubfc_rppg_to_phys_in_per_chunk_metrics.csv"
 
 # Run the calculation
 if Path(csv_path).exists():
