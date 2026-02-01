@@ -1,0 +1,63 @@
+# Experiment: DeepPhys model trained on PURE, tested on UBFC-rPPG
+# Cross-dataset: train/valid on PURE, test on UBFC-rPPG.
+#
+# MINIMAL CONFIG: Only experiment-specific settings!
+# All preprocessing, paths, formats auto-load from dataset templates.
+
+BASE: ['../base/models/deepphys.yaml']
+
+TOOLBOX_MODE: "train_and_test"
+
+# Training configuration - ONLY experiment-specific settings
+TRAIN:
+  BATCH_SIZE: 4
+  EPOCHS: 30
+  LR: 9e-3
+  MODEL_FILE_NAME: deepphys_pure_to_ubfc_rppg
+  PLOT_LOSSES_AND_LR: True
+  DATA:
+    DATASET: PURE  # Dataset name triggers auto-load of all preprocessing/paths
+    BEGIN: 0.0     # Experiment-specific: training split start
+    END: 0.8       # Experiment-specific: training split end
+    PREPROCESS:
+      DATA_TYPE: ['DiffNormalized', 'Standardized']
+      LABEL_TYPE: DiffNormalized
+      CHUNK_LENGTH: 240
+      RESIZE:
+        H: 96
+        W: 96
+
+# Validation configuration - ONLY experiment-specific settings
+VALID:
+  DATA:
+    DATASET: PURE  # Same dataset as training
+    BEGIN: 0.8     # Experiment-specific: validation split start
+    END: 1.0      # Experiment-specific: validation split end
+    PREPROCESS:
+      DATA_TYPE: ['DiffNormalized', 'Standardized']
+      LABEL_TYPE: DiffNormalized
+      CHUNK_LENGTH: 240
+      RESIZE:
+        H: 96
+        W: 96
+
+# Test configuration - ONLY experiment-specific settings
+TEST:
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA']
+  USE_LAST_EPOCH: false
+  DATA:
+    DATASET: UBFC-rPPG  # Different dataset for cross-dataset testing
+    BEGIN: 0.0          # Experiment-specific: test split start
+    END: 1.0            # Experiment-specific: test split end
+    PREPROCESS:
+      DATA_TYPE: ['DiffNormalized', 'Standardized']
+      LABEL_TYPE: DiffNormalized
+      CHUNK_LENGTH: 180  # Match training for model consistency
+      RESIZE:
+        H: 96
+        W: 96
+      # Note: This chunk length is also used for metrics evaluation (per-chunk metrics)
+
+# Test-time batch size (smaller to avoid OOM with long chunks)
+INFERENCE:
+  BATCH_SIZE: 1

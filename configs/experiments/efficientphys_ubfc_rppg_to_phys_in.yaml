@@ -62,6 +62,10 @@ TEST:
         W: 96
       # Note: This chunk length is also used for metrics evaluation (per-chunk metrics)
 
+# Test-time batch size (smaller to avoid OOM with long chunks)
+INFERENCE:
+  BATCH_SIZE: 1
+
 # Model-specific settings
 MODEL:
   EFFICIENTPHYS:

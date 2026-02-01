@@ -103,4 +103,3 @@ test(config, data_loader_dict)
 print("=" * 80)
 print("Testing completed!")
 # %%
-

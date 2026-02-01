@@ -58,3 +58,7 @@ TEST:
         W: 96  # DeepPhys supports: 36, 72, or 96 (must match TRAIN)
       # Note: This chunk length is also used for metrics evaluation (per-chunk metrics)
 
+# Test-time batch size (smaller to avoid OOM with long chunks)
+INFERENCE:
+  BATCH_SIZE: 1
+

@@ -8,16 +8,19 @@ TEST:
     DO_PREPROCESS: false                    # if first time, should be true
     BEGIN: 0.0
     END: 1.0
+    # Override CACHED_PATH only if your preprocessed data is not under the template path.
+    # Template uses CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE". Final path is CACHED_PATH/EXP_DATA_NAME.
+    # Uncomment and set to your actual base path (parent of the UBFC-PHYS_ClipLength700_... folder):
+    # CACHED_PATH: "/path/to/your/DATASET_PRE"
     PREPROCESS:
-      # Only specify settings that differ from template (matching tscan_ubfc_rppg_to_phys.yaml TEST section)
-      # The training config TEST section only overrides these settings, rest come from template
-      DATA_TYPE: ['DiffNormalized', 'Standardized']  # Must match training config
-      LABEL_TYPE: DiffNormalized  # Must match training config
-      CHUNK_LENGTH: 240  # Must match training config TEST section
-      # Note: Other settings will come from UBFC-PHYS dataset template:
-      # - DATA_AUG: ['None'] (from template)
-      # - BACKEND: 'HC' (from template, training config doesn't override)
-      # - All other CROP_FACE and RESIZE settings from template
+      # Must match exactly the settings used when you preprocessed UBFC-PHYS (e.g. from tscan_ubfc_rppg_to_phys.yaml TEST)
+      DATA_TYPE: ['DiffNormalized', 'Standardized']
+      LABEL_TYPE: DiffNormalized
+      CHUNK_LENGTH: 700
+      RESIZE:
+        H: 96   # Must match training TEST section so EXP_DATA_NAME matches preprocessed folder
+        W: 96
+      # Other settings (CROP_FACE, BACKEND, etc.) come from UBFC-PHYS dataset template
 DEVICE: cuda:0
 NUM_OF_GPU_TRAIN: 1
 LOG:
@@ -28,7 +31,7 @@ MODEL:
   TSCAN:
     FRAME_DEPTH: 10
 INFERENCE:
-  BATCH_SIZE: 4
+  BATCH_SIZE: 1   # Use 1 for long chunks (e.g. CHUNK_LENGTH 700) to avoid CUDA OOM; increase if you have more GPU memory
   EVALUATION_METHOD: FFT        # "FFT" or "peak detection"
-  MODEL_PATH: "/home/yj167/Desktop/rPPG-Toolbox/scripts/train_runs/exp/UBFC-rPPG_ClipLength180_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW128_SizeH128/PreTrainedModels/Best_Tscan.pth"
+  MODEL_PATH: "/home/yj167/Desktop/rPPG-Toolbox/scripts/train_runs/exp/UBFC-rPPG_ClipLength180_DataTypeDiffNormalized_Standardized_DataAugNone_LabelTypeDiffNormalized_Crop_faceTrue_BackendHC_Large_boxTrue_Large_size1.5_Dyamic_DetFalse_det_len30_Median_face_boxFalse_SizeW96_SizeH96/PreTrainedModels/Best_Tscan.pth"
   # Using Best_Tscan.pth (best validation performance model)

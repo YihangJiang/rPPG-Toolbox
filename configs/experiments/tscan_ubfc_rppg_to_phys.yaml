@@ -23,7 +23,7 @@ TRAIN:
       DATA_TYPE: ['DiffNormalized', 'Standardized']
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
-      COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match across TRAIN/VALID/TEST)
+      # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match across TRAIN/VALID/TEST)
       RESIZE:
         H: 96  # Explicitly set resize dimensions
         W: 96  # Explicitly set resize dimensions
@@ -38,7 +38,7 @@ VALID:
       DATA_TYPE: ['DiffNormalized', 'Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 180  # Override: template uses 700, but BASIC config uses 180
-      COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
+      # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
         H: 96  # Explicitly set resize dimensions
         W: 96  # Explicitly set resize dimensions
@@ -54,11 +54,15 @@ TEST:
     PREPROCESS:
       DATA_TYPE: ['DiffNormalized', 'Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
-      CHUNK_LENGTH: 240  # Override: template uses 700, but BASIC config uses 180
-      COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
+      CHUNK_LENGTH: 700  # Override: template uses 700, but BASIC config uses 180
+      # COLOR_CHANNEL: 'R'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
         H: 96  # Override: match training dataset size for model consistency
         W: 96  # Override: match training dataset size for model consistency
       # Note: This chunk length is also used for metrics evaluation (per-chunk metrics)
+
+# Test-time batch size (smaller to avoid OOM with long chunks)
+INFERENCE:
+  BATCH_SIZE: 1
 
 

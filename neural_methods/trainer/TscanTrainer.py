@@ -261,10 +261,58 @@ class TscanTrainer(BaseTrainer):
                     predictions[subj_index][sort_index] = pred_ppg_test[idx * self.chunk_len:(idx + 1) * self.chunk_len]
                     labels[subj_index][sort_index] = labels_test[idx * self.chunk_len:(idx + 1) * self.chunk_len]
 
+
         print('')
         calculate_metrics(predictions, labels, self.config)
         if self.config.TEST.OUTPUT_SAVE_DIR: # saving test outputs
             self.save_test_outputs(predictions, labels, self.config)
+
+    def analyze(self, data_loader=None, config=None):
+        """Run high-dimensional feature analysis on test results.
+
+        Loads test outputs from config.TEST.OUTPUT_SAVE_DIR, extracts signal and
+        video features, runs PCA/t-SNE/UMAP, and saves visualizations and
+        correlation CSVs to test_results_dir/feature_analysis. Call this after
+        test() when test outputs have been saved.
+
+        Args:
+            data_loader: Optional data loader dict (e.g. from train/test script).
+                Currently unused; reserved for future use.
+            config: Optional config object. If None, uses self.config.
+        """
+        config = config or self.config
+        if not config.TEST.OUTPUT_SAVE_DIR:
+            logging.warning(
+                "analyze() skipped: config.TEST.OUTPUT_SAVE_DIR is not set. "
+                "Run test() with OUTPUT_SAVE_DIR set first."
+            )
+            return
+        test_results_dir = os.path.dirname(config.TEST.OUTPUT_SAVE_DIR)
+        output_dir = os.path.join(test_results_dir, "feature_analysis")
+        base_cached_path = os.path.dirname(config.TEST.DATA.CACHED_PATH)
+        exp_data_name = os.path.basename(config.TEST.DATA.CACHED_PATH)
+        saved_dir = config.TEST.OUTPUT_SAVE_DIR
+        if not os.path.isdir(saved_dir):
+            logging.warning(
+                "analyze() skipped: test output directory does not exist: %s",
+                saved_dir,
+            )
+            return
+        pickle_files = [f for f in os.listdir(saved_dir) if f.endswith('.pickle')]
+        if not pickle_files:
+            logging.warning(
+                "analyze() skipped: no pickle file found in %s. Run test() with OUTPUT_SAVE_DIR set first.",
+                saved_dir,
+            )
+            return
+        from analysis.visualize_high_dim_features import run_high_dim_feature_analysis
+        run_high_dim_feature_analysis(
+            test_results_dir=test_results_dir,
+            output_dir=output_dir,
+            base_cached_path=base_cached_path,
+            exp_data_name=exp_data_name,
+            skip_frame_visualization=False,
+        )
 
     def save_model(self, index, best=0):
         if best:

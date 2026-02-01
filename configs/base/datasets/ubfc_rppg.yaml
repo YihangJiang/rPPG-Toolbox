@@ -13,7 +13,6 @@ DATA_TEMPLATE:
   PREPROCESS:
     DATA_AUG: ['None']
     DO_CHUNK: True
-    CHUNK_LENGTH: 180
     CROP_FACE:
       DO_CROP_FACE: True
       BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace

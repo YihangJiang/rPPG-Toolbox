@@ -136,5 +136,6 @@ data_loader_dict["test"] = DataLoader(
 model_trainer = train(config, data_loader_dict)
 # %%
 model_trainer.test(data_loader_dict)
+model_trainer.analyze(data_loader_dict)
 # %%
 

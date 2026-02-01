@@ -7,6 +7,7 @@ This module provides functions to:
 """
 
 import pickle
+import re
 import pandas as pd
 import numpy as np
 import os
@@ -202,14 +203,13 @@ def build_file_list_cache(base_cached_path, exp_data_name=None):
     all_csv_files = [f for f in os.listdir(file_list_dir) if f.endswith('.csv')]
     print(f"  Found {len(all_csv_files)} total CSV file(s) in DataFileLists")
     
-    # Filter CSV files to match exp_data_name if provided
+    # Filter CSV files: include only if filename matches exp_data_name + _ + number (e.g. ..._0.0_1.0.csv)
     if exp_data_name:
-        # CSV files are named: {EXP_DATA_NAME}_{BEGIN}_{END}{FOLD_STR}.csv
-        # So we filter for files that start with exp_data_name
-        csv_files = [f for f in all_csv_files if f.startswith(exp_data_name + '_')]
-        print(f"  Filtered to {len(csv_files)} CSV file(s) matching EXP_DATA_NAME: {exp_data_name}")
+        pattern = re.compile(r'^' + re.escape(exp_data_name) + r'_\d+\.?\d*')
+        csv_files = [f for f in all_csv_files if pattern.match(f)]
+        print(f"  Filtered to {len(csv_files)} CSV file(s) matching {exp_data_name}_<number>...")
         if len(csv_files) == 0:
-            print(f"  WARNING: No CSV files found matching EXP_DATA_NAME '{exp_data_name}'")
+            print(f"  WARNING: No CSV files found matching EXP_DATA_NAME '{exp_data_name}' (pattern: exp_data_name_<number>)")
             print(f"  Available CSV files: {all_csv_files[:5]}..." if len(all_csv_files) > 5 else f"  Available CSV files: {all_csv_files}")
     else:
         csv_files = all_csv_files

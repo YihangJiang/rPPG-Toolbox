@@ -54,3 +54,7 @@ TEST:
       LABEL_TYPE: DiffNormalized  # Use raw labels - model predicts raw PPG signals
       CHUNK_LENGTH: 240 # Override: template uses 700, but BASIC config uses 180
       # Note: This chunk length is also used for metrics evaluation (per-chunk metrics)
+
+# Test-time batch size (smaller to avoid OOM with long chunks)
+INFERENCE:
+  BATCH_SIZE: 1

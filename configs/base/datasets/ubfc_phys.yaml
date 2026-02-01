@@ -19,7 +19,6 @@ DATA_TEMPLATE:
     DATA_TYPE: ['DiffNormalized', 'Standardized']
     LABEL_TYPE: DiffNormalized
     DO_CHUNK: True
-    CHUNK_LENGTH: 700
     CROP_FACE:
       DO_CROP_FACE: True
       BACKEND: 'HC'

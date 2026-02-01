@@ -14,7 +14,6 @@ DATA_TEMPLATE:
   PREPROCESS:
     DATA_AUG: ['None']
     DO_CHUNK: True
-    CHUNK_LENGTH: 180
     CROP_FACE:
       DO_CROP_FACE: False  # Already cropped to infraorbital region
       BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace

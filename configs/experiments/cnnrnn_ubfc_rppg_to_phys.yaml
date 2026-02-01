@@ -35,3 +35,7 @@ TEST:
     DATASET: UBFC-PHYS  # Different dataset for cross-dataset testing
     BEGIN: 0.0          # Experiment-specific: test split start
     END: 1.0            # Experiment-specific: test split end
+
+# Test-time batch size (smaller to avoid OOM with long chunks)
+INFERENCE:
+  BATCH_SIZE: 1
