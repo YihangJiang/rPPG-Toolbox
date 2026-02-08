@@ -1,9 +1,9 @@
-# Experiment: TSCAN model trained on UBFC-rPPG (infraorbital), tested on PURE (infraorbital)
-# This is the infraorbital version of tscan_ubfc_rppg_to_pure.yaml
+# Experiment: TSCAN model trained on UBFC-rPPG (right malar), tested on PURE (infraorbital)
+# This is the right malar version of tscan_ubfc_rppg_to_pure.yaml
 #
 # MINIMAL CONFIG: Only experiment-specific settings!
 # All preprocessing, paths, formats auto-load from dataset templates.
-# DATA_PATH is determined by the dataset template (ubfc_rppg_in.yaml, pure_in.yaml).
+# DATA_PATH is determined by the dataset template (ubfc_rppg_rm.yaml, pure_in.yaml).
 
 BASE: ['../base/models/tscan.yaml']
 
@@ -14,17 +14,17 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 30
   LR: 9e-3
-  MODEL_FILE_NAME: tscan_ubfc_rppg_to_pure_in
+  MODEL_FILE_NAME: tscan_ubfc_rppg_to_pure_rm
   PLOT_LOSSES_AND_LR: True
   DATA:
-    DATASET: UBFC-rPPG-IN  # Dataset name triggers auto-load of infraorbital template
+    DATASET: UBFC-rPPG-RM  # Dataset name triggers auto-load of right malar template
     BEGIN: 0.0          # Experiment-specific: training split start
     END: 0.8            # Experiment-specific: training split end
     PREPROCESS:
       DATA_TYPE: ['DiffNormalized', 'Standardized']
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
-      CHUNK_LENGTH: 180  # Override: template uses 180 for infraorbital
-      # COLOR_CHANNEL: 'G'  # Extract single channel: 'R', 'G', or 'B' (must match across TRAIN/VALID/TEST)
+      CHUNK_LENGTH: 180  # Override: template uses 180 for right malar
+      COLOR_CHANNEL: 'G'  # Extract single channel: 'R', 'G', or 'B' (must match across TRAIN/VALID/TEST)
       RESIZE:
         H: 96  # Explicitly set resize dimensions
         W: 96  # Explicitly set resize dimensions
@@ -32,14 +32,14 @@ TRAIN:
 # Validation configuration - ONLY experiment-specific settings
 VALID:
   DATA:
-    DATASET: UBFC-rPPG-IN  # Same dataset as training (infraorbital)
+    DATASET: UBFC-rPPG-RM  # Same dataset as training (right malar)
     BEGIN: 0.8          # Experiment-specific: validation split start
     END: 1.0            # Experiment-specific: validation split end
     PREPROCESS:
       DATA_TYPE: ['DiffNormalized', 'Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
-      CHUNK_LENGTH: 180  # Override: template uses 180 for infraorbital
-      # COLOR_CHANNEL: 'G'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
+      CHUNK_LENGTH: 180  # Override: template uses 180 for right malar
+      COLOR_CHANNEL: 'G'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
         H: 96  # Explicitly set resize dimensions
         W: 96  # Explicitly set resize dimensions
@@ -56,7 +56,7 @@ TEST:
       DATA_TYPE: ['DiffNormalized', 'Standardized']  # Must match TRAIN for consistent model input
       LABEL_TYPE: DiffNormalized  # Use DiffNormalized labels
       CHUNK_LENGTH: 240  # Override: template uses 180, but test uses 240
-      # COLOR_CHANNEL: 'G'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
+      COLOR_CHANNEL: 'G'  # Extract single channel: 'R', 'G', or 'B' (must match TRAIN)
       RESIZE:
         H: 96  # Override: match training dataset size for model consistency
         W: 96  # Override: match training dataset size for model consistency

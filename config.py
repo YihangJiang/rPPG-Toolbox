@@ -396,6 +396,7 @@ def _load_dataset_template(config, dataset_name, data_section):
     dataset_file_map = {
         'UBFC-rPPG': 'ubfc_rppg.yaml',
         'UBFC-rPPG-IN': 'ubfc_rppg_in.yaml',  # Infraorbital variant
+        'UBFC-rPPG-RM': 'ubfc_rppg_rm.yaml',  # Right malar variant
         'UBFC-PHYS': 'ubfc_phys.yaml',
         'UBFC-PHYS-IN': 'ubfc_phys_in.yaml',  # Infraorbital variant
         'PURE': 'pure.yaml',

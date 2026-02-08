@@ -39,78 +39,47 @@ face_mesh = mp_face_mesh.FaceMesh(
     max_num_faces=2,
     min_detection_confidence=0.5)
 
-keypoints = [
-    [10, 109, 108, 151, 337, 338],
-    [67, 103, 104, 105, 66, 107, 108, 109],
-    [297, 338, 337, 336, 296, 334, 333, 332],
-    [151, 108, 107, 55, 8, 285, 336, 337],
-    [8, 55, 193, 122, 196, 197, 419, 351, 417, 285],
-    [197, 196, 3, 51, 5, 281, 248, 419],
-    [4, 45, 134, 220, 237, 44, 1, 274, 457, 440, 363, 275],
-    [134, 131, 49, 102, 64, 219, 218, 237, 220],
-    [363, 440, 457, 438, 439, 294, 331, 279, 360],
-    [5, 51, 45, 4, 275, 281],
-    [3, 217, 126, 209, 131, 134],
-    [248, 363, 360, 429, 355, 437],
-    [188, 114, 217, 236, 196],
-    [412, 419, 456, 437, 343],
-    [2, 97, 167, 37, 0, 267, 393, 326],
-    [97, 165, 185, 40, 39, 37, 167],
-    [326, 393, 267, 269, 270, 409, 391],
-    [97, 98, 203, 186, 185, 165],
-    [326, 391, 409, 410, 423, 327],
-    [54, 21, 162, 127, 116, 143, 156, 70, 63, 68],
-    [284, 298, 293, 300, 383, 372, 345, 356, 389, 251],
-    [126, 100, 118, 117, 116, 123, 147, 187, 205, 203, 129, 209],
-    [355, 429, 358, 423, 425, 411, 376, 352, 345, 346, 347, 329],
-    [203, 205, 187, 147, 177, 215, 138, 172, 136, 135, 212, 186, 206],
-    [423, 426, 410, 432, 364, 365, 397, 367, 435, 401, 376, 411, 425],
-    [18, 83, 182, 194, 32, 140, 176, 148, 152, 377, 400, 369, 262, 418, 406, 313],
-    [57, 212, 210, 169, 150, 149, 176, 140, 204, 43],
-    [287, 273, 424, 369, 400, 378, 379, 394, 430, 432],
-    [464, 253, 446, 329, 347]
-]
+# Region definitions: each region has keypoints (MediaPipe landmark indices) and optional warped_corners for perspective warp.
+# warped_corners: indices into keypoints for 4 corners used in getPerspectiveTransform (empty = no warp).
+REGIONS = {
+    "medial forehead": {"keypoints": [10, 109, 108, 151, 337, 338], "warped_corners": []},
+    "left lateral forehead": {"keypoints": [67, 103, 104, 105, 66, 107, 108, 109], "warped_corners": []},
+    "right lateral forehead": {"keypoints": [297, 338, 337, 336, 296, 334, 333, 332], "warped_corners": []},
+    "glabella": {"keypoints": [151, 108, 107, 55, 8, 285, 336, 337], "warped_corners": []},
+    "upper nasal dorsum": {"keypoints": [8, 55, 193, 122, 196, 197, 419, 351, 417, 285], "warped_corners": []},
+    "lower nasal dorsum": {"keypoints": [197, 196, 3, 51, 5, 281, 248, 419], "warped_corners": []},
+    "soft triangle": {"keypoints": [4, 45, 134, 220, 237, 44, 1, 274, 457, 440, 363, 275], "warped_corners": []},
+    "left ala": {"keypoints": [134, 131, 49, 102, 64, 219, 218, 237, 220], "warped_corners": []},
+    "right ala": {"keypoints": [363, 440, 457, 438, 439, 294, 331, 279, 360], "warped_corners": []},
+    "nasal tip": {"keypoints": [5, 51, 45, 4, 275, 281], "warped_corners": []},
+    "left lower nasal sidewall": {"keypoints": [3, 217, 126, 209, 131, 134], "warped_corners": []},
+    "right lower nasal sidewall": {"keypoints": [248, 363, 360, 429, 355, 437], "warped_corners": []},
+    "left mid nasal sidewall": {"keypoints": [188, 114, 217, 236, 196], "warped_corners": []},
+    "right mid nasal sidewall": {"keypoints": [412, 419, 456, 437, 343], "warped_corners": []},
+    "philtrum": {"keypoints": [2, 97, 167, 37, 0, 267, 393, 326], "warped_corners": []},
+    "left upper lip": {"keypoints": [97, 165, 185, 40, 39, 37, 167], "warped_corners": []},
+    "right upper lip": {"keypoints": [326, 393, 267, 269, 270, 409, 391], "warped_corners": []},
+    "left nasolabial fold": {"keypoints": [97, 98, 203, 186, 185, 165], "warped_corners": []},
+    "right nasolabial fold": {"keypoints": [326, 391, 409, 410, 423, 327], "warped_corners": []},
+    "left temporal": {"keypoints": [54, 21, 162, 127, 116, 143, 156, 70, 63, 68], "warped_corners": []},
+    "right temporal": {"keypoints": [284, 298, 293, 300, 383, 372, 345, 356, 389, 251], "warped_corners": []},
+    "left malar": {"keypoints": [126, 100, 118, 117, 116, 123, 147, 187, 205, 203, 129, 209], "warped_corners": [0, 3, 6, 8]},
+    "right malar": {"keypoints": [355, 429, 358, 423, 425, 411, 376, 352, 345, 346, 347, 329], "warped_corners": []},
+    "left lower cheek": {"keypoints": [203, 205, 187, 147, 177, 215, 138, 172, 136, 135, 212, 186, 206], "warped_corners": []},
+    "right lower cheek": {"keypoints": [423, 426, 410, 432, 364, 365, 397, 367, 435, 401, 376, 411, 425], "warped_corners": []},
+    "chin": {"keypoints": [18, 83, 182, 194, 32, 140, 176, 148, 152, 377, 400, 369, 262, 418, 406, 313], "warped_corners": []},
+    "left marionette fold": {"keypoints": [57, 212, 210, 169, 150, 149, 176, 140, 204, 43], "warped_corners": []},
+    "right marionette fold": {"keypoints": [287, 273, 424, 369, 400, 378, 379, 394, 430, 432], "warped_corners": []},
+    "infraorbital": {"keypoints": [464, 253, 446, 329, 347], "warped_corners": [0, 3, 4, 2]},
+    # "Left_eye": {"keypoints": [249, 263, 362, 373, 374, 380, 381, 382, 384, 385, 386, 387, 388, 390, 398, 466], "warped_corners": []},
+    # left_eye_region: warped_corners [3,0,1,2] maps keypoints to dst [top-left, bottom-left, bottom-right, top-right] so brow is on top, eye on bottom
+    "left_eye_region": {"keypoints": [276, 285, 464, 446], "warped_corners": [1, 2, 3, 0]},
+}
 
-face_mesh_warped_corners = [
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [0,3,6,8],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [0,3,4,2]
-]
-
-region_names = [
-    "medial forehead", "left lateral forehead", "right lateral forehead", "glabella",
-    "upper nasal dorsum", "lower nasal dorsum", "soft triangle", "left ala", "right ala",
-    "nasal tip", "left lower nasal sidewall", "right lower nasal sidewall", "left mid nasal sidewall",
-    "right mid nasal sidewall", "philtrum", "left upper lip", "right upper lip", "left nasolabial fold",
-    "right nasolabial fold", "left temporal", "right temporal", "left malar", "right malar",
-    "left lower cheek", "right lower cheek", "chin", "left marionette fold", "right marionette fold", "infraorbital"
-]
+# Backward compatibility: derive lists from dict for existing code
+region_names = list(REGIONS.keys())
+keypoints = [REGIONS[name]["keypoints"] for name in region_names]
+face_mesh_warped_corners = [REGIONS[name]["warped_corners"] for name in region_names]
 
 def plot_landmark(img_base, facial_area_name, results, pt_min, pt_max, plot_button):
     """_plot the area of certain parts on the face_
@@ -152,11 +121,14 @@ def resize_and_show(image):
   plt.imshow(img)
   return img
 
-def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, region_name=None, output_size=(320, 320), is_png_sequence=False):
+def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, region_name=None, output_size=(320, 320), is_png_sequence=False, last_warped_frame=None):
     """
     Warps the specified region from each frame and saves a 320x320 video of the warped patches.
-    If the face is not detected in a frame, a black frame is written and its index is saved to a CSV.
+    If the face is not detected in a frame, the last successfully warped frame is written (or last_warped_frame if provided, or black if none yet), and its index is saved to a CSV.
     For PNG sequences, saves individual PNG files instead of a video.
+
+    Args:
+        last_warped_frame: Optional initial frame to use for missed frames before any successful warp (e.g. from a previous run). Default None.
     """
     # Check if input is a directory (PNG sequence) or a file (video)
     is_png_sequence = os.path.isdir(input_video_path)
@@ -261,12 +233,11 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
         print(f"Output video will be: {output_size[0]}x{output_size[1]} at {fps} FPS")
 
     # Validate region
-    if region_name not in region_names:
+    if region_name not in REGIONS:
         print(f"Region '{region_name}' not found.")
         return
-    region_idx = region_names.index(region_name)
-    region_landmarks = keypoints[region_idx]
-    selected_points_in_roi = face_mesh_warped_corners[region_idx]
+    region_landmarks = REGIONS[region_name]["keypoints"]
+    selected_points_in_roi = REGIONS[region_name]["warped_corners"]
 
     # Destination square (counter-clockwise)
     pts_dst = np.float32([
@@ -276,7 +247,7 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
         [output_size[0] - 1, 0]
     ])
 
-    # Track missed frames
+    # Track missed frames; last_warped_frame (for filling missed frames) is passed in or updated as we warp
     missed_frames = []
     frame_idx = 0
 
@@ -318,6 +289,7 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
                         if not output_filepath.lower().endswith(('.png', '.jpg', '.jpeg')):
                             output_filepath = os.path.splitext(output_filepath)[0] + '.png'
                         cv2.imwrite(output_filepath, warped)
+                        last_warped_frame = warped.copy()
                         frame_written = True
                         break  # Only write first detected face
                     except Exception as e:
@@ -326,11 +298,12 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
             if not frame_written:
                 print(f"Frame {frame_idx}: No face detected.")
                 missed_frames.append(frame_idx)
-                black_frame = np.zeros((output_size[1], output_size[0], 3), dtype=np.uint8)
-                # Ensure .png extension for black frame too
+                # Use last successful frame if available, otherwise black frame
+                fill_frame = last_warped_frame if last_warped_frame is not None else np.zeros((output_size[1], output_size[0], 3), dtype=np.uint8)
+                # Ensure .png extension for output
                 if not output_filepath.lower().endswith(('.png', '.jpg', '.jpeg')):
                     output_filepath = os.path.splitext(output_filepath)[0] + '.png'
-                cv2.imwrite(output_filepath, black_frame)
+                cv2.imwrite(output_filepath, fill_frame)
     else:
         # Process video file
         while True:
@@ -359,6 +332,7 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
                         warped = cv2.warpPerspective(frame, M, output_size)
 
                         out_writer.write(warped)
+                        last_warped_frame = warped.copy()
                         frame_written = True
                         break  # Only write first detected face
                     except Exception as e:
@@ -367,8 +341,9 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
             if not frame_written:
                 print(f"Frame {frame_idx}: No face detected.")
                 missed_frames.append(frame_idx)
-                black_frame = np.zeros((output_size[1], output_size[0], 3), dtype=np.uint8)
-                out_writer.write(black_frame)
+                # Use last successful frame if available, otherwise black frame
+                fill_frame = last_warped_frame if last_warped_frame is not None else np.zeros((output_size[1], output_size[0], 3), dtype=np.uint8)
+                out_writer.write(fill_frame)
 
     # Clean up
     if not is_png_sequence:
@@ -387,7 +362,6 @@ def annotate_video_with_rois(input_video_path, output_video_path, face_mesh, reg
             missed_frames_df.loc[-1] = [input_video_path, missed_frames]
             missed_frames_df.index = missed_frames_df.index + 1
             missed_frames_df = missed_frames_df.sort_index()
-    print(missed_frames_df)
     missed_frames_df.to_csv('./missed_frames.csv')
     
     if is_png_sequence:
@@ -559,29 +533,42 @@ def plot_rois(results, image, region_names_to_plot=None):
 
                 regions_to_plot = []
                 for name in region_names_to_plot:
-                    if name in region_names:
-                        idx = region_names.index(name)
-                        regions_to_plot.append((name, keypoints[idx]))
+                    if name in REGIONS:
+                        regions_to_plot.append((name, REGIONS[name]))
                     else:
                         print(f"Region '{name}' not found. Skipping.")
             else:
-                regions_to_plot = list(zip(region_names, keypoints))
+                regions_to_plot = [(name, REGIONS[name]) for name in REGIONS]
 
-            for region_name, keypoints_indices in regions_to_plot:
+            # Distinct colors per region: BGR (green, blue, cyan, magenta, yellow)
+            region_colors = [(0, 255, 0), (255, 0, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255)]
+            for region_idx, (region_name, region_data) in enumerate(regions_to_plot):
+                color = region_colors[region_idx % len(region_colors)]
                 print(f"\nShowing region: {region_name}")
+
+                keypoints_indices = region_data["keypoints"]
+                warped_corners = region_data.get("warped_corners", [])
+                pts = []
                 for j, i in enumerate(keypoints_indices):
+                    if i >= len(face_landmarks.landmark):
+                        continue
                     lm = face_landmarks.landmark[i]
                     x, y = int(lm.x * w), int(lm.y * h)
-                    cv2.circle(overlay, (x, y), 3, (0, 255, 0), -1)
+                    pts.append((x, y))
+                    cv2.circle(overlay, (x, y), 4, color, -1)
                     cv2.putText(
                         overlay, str(j), (x + 2, y - 2),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1, cv2.LINE_AA
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA
                     )
+                if len(pts) == 4 and len(warped_corners) == 4:
+                    quad_pts = np.array([pts[k] for k in warped_corners], dtype=np.int32)
+                    cv2.polylines(overlay, [quad_pts], isClosed=True, color=color, thickness=2)
 
             # Show image
-            plt.figure(figsize=(8, 8))
+            title_regions = ", ".join(r for r, _ in regions_to_plot)
+            plt.figure(figsize=(10, 10))
             plt.imshow(cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB))
-            plt.title("Labeled Region Points")
+            plt.title(f"Labeled Region Points: {title_regions}")
             plt.axis("off")
             plt.show()
     else:
@@ -728,6 +715,41 @@ def locate_eye_corner(results_face_mesh, eye_seq, img):
   pt_min = (int(x_list[min_id] * img.shape[1]), int(y_list[min_id] * img.shape[0]))
   pt_max = (int(x_list[max_id] * img.shape[1]), int(y_list[max_id] * img.shape[0])) 
   return pt_min, pt_max
+
+def get_left_eye_region_points(results, image):
+    """
+    Compute 4 points for left_eye_region: pt_min, pt_max (eye corners from locate_eye_corner),
+    and the two endpoints of the lower boundary of the left eyebrow.
+
+    Returns:
+        list of 4 (x,y) tuples: [pt_min, pt_max, brow_inner, brow_outer]
+        Order: inner eye corner, outer eye corner, outer brow end, inner brow end (for closed quad)
+    """
+    if not results.multi_face_landmarks:
+        return []
+    lm = results.multi_face_landmarks[0]
+    h, w = image.shape[:2]
+
+    # Eye corners via locate_eye_corner
+    left_eye_seq = get_seq_num_facial_areas(facial_areas, "Left_eye")
+    pt_min, pt_max = locate_eye_corner(results, left_eye_seq, image)
+
+    # Lower boundary of left eyebrow: each connection (a,b) joins upper-to-lower.
+    # Take the point with larger y (closer to eye) from each connection = lower boundary.
+    lower_brow_indices = set()
+    for a, b in mp_face_mesh.FACEMESH_LEFT_EYEBROW:
+        if a >= len(lm.landmark) or b >= len(lm.landmark):
+            continue
+        ya, yb = lm.landmark[a].y, lm.landmark[b].y
+        lower_brow_indices.add(a if ya > yb else b)
+    lower_brow_pts = [(int(lm.landmark[i].x * w), int(lm.landmark[i].y * h)) for i in lower_brow_indices if i < len(lm.landmark)]
+    if len(lower_brow_pts) < 2:
+        return [pt_min, pt_max, pt_min, pt_max]  # fallback
+    # Start of lower brow = inner end (min x, near nose). End of lower brow = outer end (max x, near temple)
+    brow_inner = min(lower_brow_pts, key=lambda p: p[0])  # start of lower left eye brow
+    brow_outer = max(lower_brow_pts, key=lambda p: p[0])  # end of lower left eye brow
+
+    return [pt_min, pt_max, brow_outer, brow_inner]
 
 def get_seq_num_facial_areas(facial_areas, area_name):
   selected_facial_area = facial_areas[area_name]

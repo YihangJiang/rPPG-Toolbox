@@ -228,6 +228,13 @@ def run_high_dim_feature_analysis(
 
     feature_df = pd.concat([info_df, feature_df], axis=1)
 
+    # Add hr_error column (same as hr_abs_diff) to the right of chunk_index; for CSV reference only, not used in TSN/PCA/ranking
+    feature_df.insert(
+        feature_df.columns.get_loc('chunk_index') + 1,
+        'hr_error',
+        feature_df['hr_abs_diff'].values
+    )
+
     feature_source = {}
     for col in info_df.columns:
         feature_source[col] = 'info'
@@ -238,7 +245,7 @@ def run_high_dim_feature_analysis(
 
     print(f"  Combined feature DF shape: {feature_df.shape}")
 
-    non_meta_cols = [col for col in feature_df.columns if col not in ['video_id', 'chunk_index', 'SNR', 'MACC', 'gt_hr', 'pred_hr', 'hr_diff', 'hr_abs_diff']]
+    non_meta_cols = [col for col in feature_df.columns if col not in ['video_id', 'chunk_index', 'hr_error', 'SNR', 'MACC', 'gt_hr', 'pred_hr', 'hr_diff', 'hr_abs_diff']]
     feature_df = feature_df.dropna(how='all', subset=non_meta_cols)
 
     print(f"\nExtracted features from {len(feature_df)} chunks")
@@ -249,7 +256,7 @@ def run_high_dim_feature_analysis(
         raise ValueError("No valid feature data extracted! Check that predictions and labels are loaded correctly.")
 
     feature_cols = [col for col in feature_df.columns
-                    if col not in ['video_id', 'chunk_index', 'SNR', 'MACC', 'gt_hr', 'pred_hr', 'hr_diff', 'hr_abs_diff']]
+                    if col not in ['video_id', 'chunk_index', 'hr_error', 'SNR', 'MACC', 'gt_hr', 'pred_hr', 'hr_diff', 'hr_abs_diff']]
 
     if len(feature_cols) == 0:
         raise ValueError("No feature columns found! Check that feature extraction is working correctly.")

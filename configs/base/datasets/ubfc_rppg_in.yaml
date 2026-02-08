@@ -6,7 +6,7 @@
 DATA_TEMPLATE:
   FS: 30
   DATASET: UBFC-rPPG-IN
-  DO_PREPROCESS: False 
+  DO_PREPROCESS: False
   DATA_FORMAT: NDCHW
   DATA_PATH: "/mnt/nvme2/rppg_data/DATASET_2IN"
   CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE/"

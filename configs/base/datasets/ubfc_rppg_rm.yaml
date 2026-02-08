@@ -1,21 +1,21 @@
-# PURE Infraorbital Dataset Configuration
+# UBFC-rPPG Right Malar Dataset Configuration
 # ONLY dataset-specific settings (preprocessing, paths, formats)
 # NO experiment-specific settings (BEGIN, END, etc.)
-# This is for the infraorbital preprocessed dataset (DATASET_3IN)
+# This is for the right malar preprocessed dataset (DATASET_2RM)
 
 DATA_TEMPLATE:
   FS: 30
-  DATASET: PURE-IN
+  DATASET: UBFC-rPPG-RM
   DO_PREPROCESS: False
   DATA_FORMAT: NDCHW
-  DATA_PATH: "/mnt/nvme2/rppg_data/DATASET_3IN"
+  DATA_PATH: "/mnt/nvme2/rppg_data/DATASET_2RM"
   CACHED_PATH: "/mnt/nvme2/rppg_data/DATASET_PRE/"
   EXP_DATA_NAME: ""
   PREPROCESS:
     DATA_AUG: ['None']
     DO_CHUNK: True
     CROP_FACE:
-      DO_CROP_FACE: False  # Already cropped to infraorbital region
+      DO_CROP_FACE: False  # Already cropped to right malar region
       BACKEND: 'HC'    # HC for Haar Cascade, RF for RetinaFace
       USE_LARGE_FACE_BOX: True
       LARGE_BOX_COEF: 1.5

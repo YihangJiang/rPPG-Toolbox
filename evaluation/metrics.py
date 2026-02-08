@@ -83,14 +83,20 @@ def plot_ppg_signals_train(predictions, labels, config, epoch, dataset_name='tra
             if hasattr(config.TRAIN.DATA, 'FS') and config.TRAIN.DATA.FS:
                 time_axis = np.arange(len(prediction)) / config.TRAIN.DATA.FS
                 x_label = 'Time (seconds)'
+                fs_train = config.TRAIN.DATA.FS
             else:
                 time_axis = np.arange(len(prediction))
                 x_label = 'Sample Index'
+                fs_train = config.TRAIN.DATA.FS if hasattr(config.TRAIN.DATA, 'FS') else 30
+            
+            # Estimate heart rate for both signals
+            diff_flag_train = config.TRAIN.DATA.PREPROCESS.LABEL_TYPE == "DiffNormalized" if hasattr(config.TRAIN.DATA.PREPROCESS, 'LABEL_TYPE') else True
+            hr_label, hr_pred, _, _ = calculate_metric_per_video(prediction, label, diff_flag=diff_flag_train, fs=fs_train, hr_method='FFT')
             
             # Create the plot for this chunk
             plt.figure(figsize=(15, 6))
-            plt.plot(time_axis, label, label='Ground Truth PPG', alpha=0.7, linewidth=1)
-            plt.plot(time_axis, prediction, label='Predicted PPG', alpha=0.7, linewidth=1)
+            plt.plot(time_axis, label, label=f'Ground Truth PPG (HR: {hr_label:.1f} bpm)', alpha=0.7, linewidth=1)
+            plt.plot(time_axis, prediction, label=f'Predicted PPG (HR: {hr_pred:.1f} bpm)', alpha=0.7, linewidth=1)
             plt.xlabel(x_label, fontsize=12)
             plt.ylabel('PPG Signal', fontsize=12)
             plt.title(f'Epoch {epoch} - {dataset_name} - Video {video_id} - Chunk {chunk_idx} - Predicted vs Ground Truth PPG', fontsize=14)
@@ -148,17 +154,22 @@ def plot_ppg_signals(predictions, labels, config, filename_id, max_samples=5000)
             label = video_labels[chunk_idx].cpu().numpy().flatten()
             
             # Create time axis (in seconds if FS is available)
-            if hasattr(config.TEST.DATA, 'FS') and config.TEST.DATA.FS:
-                time_axis = np.arange(len(prediction)) / config.TEST.DATA.FS
+            fs_test = getattr(config.TEST.DATA, 'FS', 30)
+            if fs_test:
+                time_axis = np.arange(len(prediction)) / fs_test
                 x_label = 'Time (seconds)'
             else:
                 time_axis = np.arange(len(prediction))
                 x_label = 'Sample Index'
             
+            # Estimate heart rate for both signals
+            diff_flag_test = config.TEST.DATA.PREPROCESS.LABEL_TYPE == "DiffNormalized" if hasattr(config.TEST.DATA.PREPROCESS, 'LABEL_TYPE') else True
+            hr_label, hr_pred, _, _ = calculate_metric_per_video(prediction, label, diff_flag=diff_flag_test, fs=fs_test, hr_method='FFT')
+            
             # Create the plot for this chunk
             plt.figure(figsize=(15, 6))
-            plt.plot(time_axis, label, label='Ground Truth PPG', alpha=0.7, linewidth=1)
-            plt.plot(time_axis, prediction, label='Predicted PPG', alpha=0.7, linewidth=1)
+            plt.plot(time_axis, label, label=f'Ground Truth PPG (HR: {hr_label:.1f} bpm)', alpha=0.7, linewidth=1)
+            plt.plot(time_axis, prediction, label=f'Predicted PPG (HR: {hr_pred:.1f} bpm)', alpha=0.7, linewidth=1)
             plt.xlabel(x_label, fontsize=12)
             plt.ylabel('PPG Signal', fontsize=12)
             plt.title(f'Video {video_id} - Chunk {chunk_idx} - Predicted vs Ground Truth PPG', fontsize=14)

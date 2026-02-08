@@ -2,8 +2,8 @@
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-# %reload_ext autoreload
-# %autoreload 2
+%reload_ext autoreload
+%autoreload 2
 import types
 from config import get_config
 from dataset import data_loader
@@ -12,7 +12,6 @@ import torch
 import random
 from torch.utils.data import DataLoader
 from neural_methods import trainer
-from neural_methods.trainer import CNNRNNTrainer
 
 RANDOM_SEED = 100
 torch.manual_seed(RANDOM_SEED)
@@ -38,15 +37,21 @@ def seed_worker(worker_id):
 # %%
 
 args = types.SimpleNamespace()
-# TSCAN rppg pure (infraorbital)
-# Use relative path from script location
+# TSCAN IN→PURE: train on UBFC-rPPG (infraorbital, ubfc_rppg_in), test on PURE (infraorbital)
 script_dir = Path(__file__).parent.parent
 args.config_file = str(script_dir / "configs" / "experiments" / "tscan_ubfc_rppg_to_pure_in.yaml")
-print(f"Loading config from: {args.config_file}")
-# baseline
 config = get_config(args)
 print('Configuration:')
 print(config, end='\n\n')
+
+print("=" * 80)
+print("CHUNK LENGTHS:")
+print(f"  TRAIN CHUNK_LENGTH: {config.TRAIN.DATA.PREPROCESS.CHUNK_LENGTH}")
+print(f"  VALID CHUNK_LENGTH: {config.VALID.DATA.PREPROCESS.CHUNK_LENGTH}")
+print(f"  TEST CHUNK_LENGTH:  {config.TEST.DATA.PREPROCESS.CHUNK_LENGTH}")
+print("=" * 80)
+print()
+
 data_loader_dict = dict()
 
 def train(config, data_loader_dict):
@@ -118,9 +123,12 @@ data_loader_dict["test"] = DataLoader(
     worker_init_fn=seed_worker,
     generator=general_generator
 )
+
+# %%
 # %%
 model_trainer = train(config, data_loader_dict)
 # %%
 model_trainer.test(data_loader_dict)
 # %%
-
+model_trainer.analyze(data_loader_dict)
+# %%
