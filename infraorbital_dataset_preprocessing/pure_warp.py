@@ -8,7 +8,7 @@ from video_utils import *
 import mediapipe as mp
 
 src_root = "/mnt/nvme2/rppg_data/DATASET_3"
-dst_root = "/mnt/nvme2/rppg_data/DATASET_3IN"
+dst_root = "/mnt/nvme2/rppg_data/DATASET_3LEFT_EYE"
 list_pure1, list_pure2 = get_pure_paths(src_root, dst_root)
 
 for i in range(len(list_pure1)):
@@ -20,7 +20,7 @@ for i in range(len(list_pure1)):
         min_detection_confidence=0.5)
     input_video_path, output_video_path = list_pure1[i], list_pure2[i]
     print(list_pure1[i], list_pure2[i])
-    annotate_video_with_rois(input_video_path, output_video_path, face_mesh, "infraorbital", (320,320))
+    annotate_video_with_rois(input_video_path, output_video_path, face_mesh, "left_eye_region", (320,320))
 
 
 # %%

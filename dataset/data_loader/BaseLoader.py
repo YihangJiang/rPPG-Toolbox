@@ -6,6 +6,7 @@ Dataset already supported: UBFC-rPPG, PURE, SCAMPS, BP4D+, and UBFC-PHYS.
 
 """
 import csv
+from torch.utils.data import Dataset
 import glob
 import os
 import re
@@ -22,7 +23,6 @@ from scipy.fftpack import fft
 import cv2
 import numpy as np
 import pandas as pd
-from torch.utils.data import Dataset
 from tqdm import tqdm
 from retinaface import RetinaFace   # Source code: https://github.com/serengil/retinaface
 import matplotlib

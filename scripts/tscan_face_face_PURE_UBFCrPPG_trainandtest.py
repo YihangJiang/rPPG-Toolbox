@@ -4,21 +4,25 @@
 import sys
 from pathlib import Path
 
+
 # Add project root to Python path for imports (needed when running in Jupyter/IPython)
 script_dir = Path(__file__).parent if '__file__' in globals() else Path.cwd() / 'scripts'
 project_root = script_dir.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
+# %%
 
+# %%
 
+from dataset import data_loader
 from config import get_config
 import types
-from dataset import data_loader
 import numpy as np
 import torch
 import random
 from torch.utils.data import DataLoader
 from neural_methods import trainer
+# %%
 
 RANDOM_SEED = 100
 torch.manual_seed(RANDOM_SEED)

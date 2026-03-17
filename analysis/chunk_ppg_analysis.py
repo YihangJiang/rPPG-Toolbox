@@ -78,3 +78,5 @@ output_path = csv_path.with_suffix('.pdf')
 plt.savefig(output_path, bbox_inches='tight', dpi=300)
 plt.close()
 print(f"Plot saved to: {output_path.resolve()}")
+
+# %%

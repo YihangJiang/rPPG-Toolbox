@@ -1,6 +1,7 @@
 # %%
 # %reload_ext autoreload
 # %autoreload 2
+%matplotlib inline
 
 import cv2
 import math
@@ -13,11 +14,15 @@ area_names = ['Right_eye', 'Left_eye']
 
 
 # %%
-input_video_path, output_video_path = './test.mov', './plot1.avi'
+# BUAA Sub_08 lux 25.1
+input_video_path = "/mnt/nvme2/rppg_data/BUAA/Sub_08/lux 25.1/lux25.1_LZY.avi"
+output_video_path = "./plot1.avi"
 vidcap = cv2.VideoCapture(input_video_path)
 success, image = vidcap.read()
 if not success:
     print("Cannot read the video")
+else:
+    print(f"Loaded frame from {input_video_path}")
 # %%
 mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils 
@@ -43,6 +48,8 @@ face_mesh = mp_face_mesh.FaceMesh(
 # %%
 img = image[:,:1200,]
 plt.imshow(img)
+plt.show()
+# %%
 
 results = face_mesh.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 len(results.multi_face_landmarks[0].landmark)

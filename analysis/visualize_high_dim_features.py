@@ -631,3 +631,5 @@ if __name__ == "__main__":
         max_chunks=None,
         skip_frame_visualization=False,
     )
+
+# %%
