@@ -51,7 +51,29 @@ def load_test_data(test_results_dir):
             f"Expected file pattern: *_outputs.pickle\n"
             f"The pickle file is created during testing when config.TEST.OUTPUT_SAVE_DIR is set."
         )
-    pickle_path = os.path.join(saved_outputs_dir, pickle_files[0])
+    pickle_filename = pickle_files[0]
+    pickle_path = os.path.join(saved_outputs_dir, pickle_filename)
+
+    # Best-effort parse run info from filename.
+    # Common pattern used by this repo: <train>_<train2>_<test>_<model>_outputs.pickle
+    # Example: UBFC_UBFC_PURE_deepphys_outputs.pickle
+    run_info = {
+        "pickle_filename": pickle_filename,
+        "model_name": None,
+        "train_dataset": None,
+        "test_dataset": None,
+    }
+    m = re.match(r"^(?P<stem>.+?)_outputs\.pickle$", pickle_filename)
+    if m:
+        stem = m.group("stem")
+        parts = stem.split("_")
+        if len(parts) >= 2:
+            run_info["model_name"] = parts[-1]
+        if len(parts) >= 3:
+            run_info["test_dataset"] = parts[-2]
+        if len(parts) >= 4:
+            # Everything before <test>_<model> is considered training descriptor.
+            run_info["train_dataset"] = "_".join(parts[:-2])
     
     # Load pickle
     with open(pickle_path, 'rb') as f:
@@ -71,7 +93,7 @@ def load_test_data(test_results_dir):
         metrics_path = os.path.join(saved_outputs_dir, metrics_files[0])
         metrics_df = pd.read_csv(metrics_path)
     
-    return predictions, labels, metrics_df, {'fs': fs, 'label_type': label_type}
+    return predictions, labels, metrics_df, {'fs': fs, 'label_type': label_type, "run_info": run_info}
 
 
 def find_video_cache_file(base_cached_path, video_id, chunk_index, file_list_cache=None, exp_data_name=None):

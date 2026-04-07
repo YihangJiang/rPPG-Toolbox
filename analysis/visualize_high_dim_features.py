@@ -76,9 +76,11 @@ def run_high_dim_feature_analysis(
         skip_frame_visualization: If True, skip the video frame visualization at the end.
     """
     test_results_dir = os.path.abspath(os.path.expanduser(test_results_dir))
+    # Root folder for all feature analysis outputs for this experiment
     if output_dir is None:
-        output_dir = os.path.join(test_results_dir, "feature_analysis")
-    output_dir = os.path.abspath(output_dir)
+        feature_root = os.path.join(test_results_dir, "feature_analysis")
+    else:
+        feature_root = os.path.abspath(output_dir)
     if exp_data_name is None:
         exp_data_name = os.path.basename(test_results_dir)
 
@@ -101,11 +103,27 @@ def run_high_dim_feature_analysis(
         else:
             print(f"✓ Cached path exists: {cached_path}")
 
-    os.makedirs(output_dir, exist_ok=True)
-
     print("Loading test data...")
     predictions, labels, metrics_df, metadata = load_test_data(test_results_dir)
     fs = metadata['fs']
+    run_info = metadata.get("run_info", {}) if isinstance(metadata, dict) else {}
+
+    # Build a naming prefix when we know train/test/model, e.g. UBFC_PURE_TSCAN
+    run_prefix = None
+    if (
+        isinstance(run_info, dict)
+        and run_info.get("train_dataset")
+        and run_info.get("test_dataset")
+        and run_info.get("model_name")
+    ):
+        run_prefix = f"{run_info['train_dataset']}_{run_info['test_dataset']}_{run_info['model_name']}"
+
+    # Final output directory for feature visualizations
+    if run_prefix:
+        output_dir = os.path.join(feature_root, f"{run_prefix}_feature")
+    else:
+        output_dir = feature_root
+    os.makedirs(output_dir, exist_ok=True)
 
     if metrics_df is not None:
         print(f"Found {len(metrics_df)} chunks in metrics CSV")
@@ -330,11 +348,16 @@ def run_high_dim_feature_analysis(
 
     print("\nCreating HR error-based visualizations...")
 
-    fig, axes = plt.subplots(2, 2 if HAS_UMAP else 1, figsize=(16, 12) if HAS_UMAP else (16, 8))
-    if not HAS_UMAP:
-        axes = [axes]
-    else:
+    if HAS_UMAP:
+        # 4 panels: PCA, t-SNE, UMAP, top-correlated features
+        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
         axes = axes.flatten()
+        bar_ax = axes[3]
+    else:
+        # 3 panels: PCA, t-SNE, top-correlated features
+        fig, axes = plt.subplots(1, 3, figsize=(24, 6))
+        axes = np.array(axes).ravel()
+        bar_ax = axes[2]
 
     scatter = axes[0].scatter(X_pca[:, 0], X_pca[:, 1], c=hr_error_metric,
                              cmap='RdYlGn_r', s=50, alpha=0.6, edgecolors='black', linewidths=0.5)
@@ -361,13 +384,6 @@ def run_high_dim_feature_analysis(
         axes[2].grid(True, alpha=0.3)
         plt.colorbar(scatter, ax=axes[2], label=hr_error_label)
 
-    axes_idx = 3 if HAS_UMAP else 1
-    if HAS_UMAP:
-        axes[axes_idx].axis('off')
-        axes_idx = 3
-    else:
-        axes_idx = 1
-
     correlations_hr = {}
     for col in feature_cols:
         if col in feature_df.columns:
@@ -381,28 +397,28 @@ def run_high_dim_feature_analysis(
 
     y_pos = np.arange(len(top_feat_names_hr))
     colors = ['red' if c < 0 else 'green' for c in top_feat_corrs_hr]
-    bars = axes[axes_idx].barh(y_pos, top_feat_corrs_hr, color=colors, alpha=0.7, edgecolor='black', linewidth=0.5)
-    axes[axes_idx].set_yticks(y_pos)
-    axes[axes_idx].set_yticklabels(top_feat_names_hr, fontsize=12, ha='right', fontweight='bold')
-    axes[axes_idx].set_xlabel(f'Correlation with HR Absolute Error', fontsize=13, fontweight='bold')
-    axes[axes_idx].set_title('Top 15 Features Correlated with HR Error', fontsize=14, fontweight='bold', pad=15)
-    axes[axes_idx].grid(True, alpha=0.3, axis='x')
-    axes[axes_idx].axvline(x=0, color='black', linestyle='--', linewidth=1)
+    bars = bar_ax.barh(y_pos, top_feat_corrs_hr, color=colors, alpha=0.7, edgecolor='black', linewidth=0.5)
+    bar_ax.set_yticks(y_pos)
+    bar_ax.set_yticklabels(top_feat_names_hr, fontsize=12, ha='right', fontweight='bold')
+    bar_ax.set_xlabel('Correlation with HR Absolute Error', fontsize=13, fontweight='bold')
+    bar_ax.set_title('Top 15 Features Correlated with HR Error', fontsize=14, fontweight='bold', pad=15)
+    bar_ax.grid(True, alpha=0.3, axis='x')
+    bar_ax.axvline(x=0, color='black', linestyle='--', linewidth=1)
 
     for i, (bar, corr_val, feat_name) in enumerate(zip(bars, top_feat_corrs_hr, top_feat_names_hr)):
         width = bar.get_width()
         label_x = width + (0.02 if width >= 0 else -0.02)
-        axes[axes_idx].text(label_x, bar.get_y() + bar.get_height()/2,
-                           f'{corr_val:.3f}',
-                           ha='left' if width >= 0 else 'right',
-                           va='center', fontsize=11, fontweight='bold')
+        bar_ax.text(label_x, bar.get_y() + bar.get_height()/2,
+                    f'{corr_val:.3f}',
+                    ha='left' if width >= 0 else 'right',
+                    va='center', fontsize=11, fontweight='bold')
         if abs(width) > 0.1:
             name_x = width * 0.5
-            axes[axes_idx].text(name_x, bar.get_y() + bar.get_height()/2,
-                               feat_name,
-                               ha='center', va='center', fontsize=9,
-                               color='white', fontweight='bold',
-                               bbox=dict(boxstyle='round,pad=0.3', facecolor='black', alpha=0.5))
+            bar_ax.text(name_x, bar.get_y() + bar.get_height()/2,
+                        feat_name,
+                        ha='center', va='center', fontsize=9,
+                        color='white', fontweight='bold',
+                        bbox=dict(boxstyle='round,pad=0.3', facecolor='black', alpha=0.5))
 
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "feature_visualization_hr_error.png"), dpi=300, bbox_inches='tight')
@@ -441,10 +457,14 @@ def run_high_dim_feature_analysis(
         top_sub = sorted(corr_sub.items(), key=lambda x: abs(x[1]), reverse=True)[:15]
         top_names = [f[0] for f in top_sub]
         top_vals = [f[1] for f in top_sub]
-        fig, axes = plt.subplots(2, 2 if HAS_UMAP else 1, figsize=(16, 12) if HAS_UMAP else (16, 8))
-        if not HAS_UMAP:
-            axes = [axes]
-        axes = axes.flatten()
+        if HAS_UMAP:
+            fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+            axes = axes.flatten()
+            idx = 3
+        else:
+            fig, axes = plt.subplots(1, 3, figsize=(24, 6))
+            axes = np.array(axes).ravel()
+            idx = 2
         axes[0].scatter(X_pca_sub[:, 0], X_pca_sub[:, 1], c=hr_error_metric, cmap='RdYlGn_r', s=50, alpha=0.6, edgecolors='black', linewidths=0.5)
         axes[0].set_title(f'{title_prefix} PCA - HR Error ({pca_sub.explained_variance_ratio_.sum():.2%})')
         axes[0].set_xlabel(f'PC1 ({pca_sub.explained_variance_ratio_[0]:.2%})')
@@ -457,7 +477,6 @@ def run_high_dim_feature_analysis(
         axes[1].set_ylabel('t-SNE 2')
         axes[1].grid(True, alpha=0.3)
         plt.colorbar(axes[1].collections[0], ax=axes[1], label=hr_error_label)
-        idx = 2
         if HAS_UMAP:
             axes[2].scatter(X_umap_sub[:, 0], X_umap_sub[:, 1], c=hr_error_metric, cmap='RdYlGn_r', s=50, alpha=0.6, edgecolors='black', linewidths=0.5)
             axes[2].set_title(f'{title_prefix} UMAP - HR Error')
@@ -465,7 +484,6 @@ def run_high_dim_feature_analysis(
             axes[2].set_ylabel('UMAP 2')
             axes[2].grid(True, alpha=0.3)
             plt.colorbar(axes[2].collections[0], ax=axes[2], label=hr_error_label)
-            idx = 3
         y_pos = np.arange(len(top_names))
         colors_bar = ['red' if c < 0 else 'green' for c in top_vals]
         axes[idx].barh(y_pos, top_vals, color=colors_bar, alpha=0.7, edgecolor='black', linewidth=0.5)

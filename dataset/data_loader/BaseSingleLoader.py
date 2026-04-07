@@ -22,7 +22,6 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 from tqdm import tqdm
-from retinaface import RetinaFace   # Source code: https://github.com/serengil/retinaface
 
 
 class BaseSingleLoader(Dataset):
@@ -304,6 +303,8 @@ class BaseSingleLoader(Dataset):
         elif backend == "RF":
             # Use a TensorFlow-based RetinaFace implementation for face detection
             # This utilizes both the CPU and GPU
+            # Import lazily so environments without retinaface/tensorflow can still import loaders.
+            from retinaface import RetinaFace
             res = RetinaFace.detect_faces(frame)
 
             if len(res) > 0:
