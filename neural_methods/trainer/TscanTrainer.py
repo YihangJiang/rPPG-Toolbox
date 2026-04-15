@@ -7,6 +7,7 @@ from collections import OrderedDict
 import numpy as np
 import torch
 import torch.optim as optim
+from typing import Optional
 from evaluation.metrics import calculate_metrics, plot_ppg_signals_train
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
 from neural_methods.model.TS_CAN import TSCAN
@@ -313,6 +314,135 @@ class TscanTrainer(BaseTrainer):
             exp_data_name=exp_data_name,
             skip_frame_visualization=False,
         )
+
+    @torch.no_grad()
+    def _to_vis_rgb(self, x_chw: torch.Tensor) -> np.ndarray:
+        """Convert a CxHxW tensor to a uint8 HxWx3 image for visualization."""
+        x = x_chw.detach().float().cpu()
+        c, h, w = x.shape
+        if c >= 3:
+            rgb = x[:3]
+        else:
+            rgb = x[:1].repeat(3, 1, 1)
+        rgb = rgb.permute(1, 2, 0).contiguous()  # HWC
+        mn = float(rgb.min())
+        mx = float(rgb.max())
+        if mx > mn:
+            rgb = (rgb - mn) / (mx - mn)
+        else:
+            rgb = torch.zeros_like(rgb)
+        rgb = (rgb * 255.0).clamp(0, 255).byte().numpy()
+        return rgb
+
+    def _compute_saliency(self, data_flat: torch.Tensor) -> torch.Tensor:
+        """Compute gradient saliency for TS-CAN inputs.
+
+        Args:
+            data_flat: Tensor of shape (B, C, H, W) on device.
+        Returns:
+            saliency: Tensor of shape (B, H, W) on CPU in [0, 1].
+        """
+        self.model.eval()
+
+        x = data_flat.detach()
+        x.requires_grad_(True)
+
+        pred = self.model(x)  # (B, 1) typically
+        score = pred.mean()
+
+        self.model.zero_grad(set_to_none=True)
+        if x.grad is not None:
+            x.grad.zero_()
+        score.backward()
+
+        grad = x.grad.detach()  # (B, C, H, W)
+        sal = grad.abs().mean(dim=1)  # (B, H, W)
+
+        # Normalize per-frame for stable visualization
+        b = sal.shape[0]
+        sal = sal.view(b, -1)
+        sal_min = sal.min(dim=1, keepdim=True).values
+        sal_max = sal.max(dim=1, keepdim=True).values
+        sal = (sal - sal_min) / (sal_max - sal_min + 1e-8)
+        sal = sal.view(b, *data_flat.shape[-2:])
+        return sal.detach().cpu()
+
+    def visualize_saliency(
+        self,
+        data_loader: dict,
+        split: str = "test",
+        out_dir: Optional[str] = None,
+        max_batches: int = 1,
+        max_frames: int = 32,
+        overlay_alpha: float = 0.45,
+    ) -> str:
+        """Generate and save saliency-map visualizations for a few batches.
+
+        This runs a forward+backward pass (gradients enabled) and produces
+        per-frame input-gradient saliency maps. Outputs are saved as PNG grids.
+
+        Returns:
+            The directory where images were saved.
+        """
+        if split not in data_loader or data_loader[split] is None:
+            raise ValueError(f"No data for split={split}")
+
+        # Lazy imports so training doesn't require viz deps until used
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        if out_dir is None:
+            base = self.config.TEST.OUTPUT_SAVE_DIR or os.path.join(self.model_dir, "test_outputs")
+            out_dir = os.path.join(os.path.dirname(base), "saliency_maps")
+        os.makedirs(out_dir, exist_ok=True)
+
+        self.model = self.model.to(self.config.DEVICE)
+        self.model.eval()
+
+        saved = 0
+        loader = data_loader[split]
+        for batch_idx, batch in enumerate(loader):
+            if batch_idx >= max_batches:
+                break
+
+            data = batch[0].to(self.config.DEVICE)  # (N, D, C, H, W)
+            n, d, c, h, w = data.shape
+
+            # Match TS-CAN expected flattening used in train/test
+            data_flat = data.view(n * d, c, h, w)
+            data_flat = data_flat[: (n * d) // self.base_len * self.base_len]
+
+            # Compute saliency for the flattened frames
+            sal = self._compute_saliency(data_flat)  # (B, H, W) on CPU
+            x_cpu = data_flat.detach().cpu()
+
+            # Visualize only first sample's first max_frames frames
+            frames_to_show = min(max_frames, x_cpu.shape[0])
+            cols = 8
+            rows = int(np.ceil(frames_to_show / cols))
+
+            fig, axes = plt.subplots(rows, cols, figsize=(cols * 2.2, rows * 2.2))
+            axes = np.array(axes).reshape(-1)
+            for i in range(rows * cols):
+                ax = axes[i]
+                ax.axis("off")
+                if i >= frames_to_show:
+                    continue
+                rgb = self._to_vis_rgb(x_cpu[i])
+                ax.imshow(rgb)
+                ax.imshow(sal[i].numpy(), cmap="jet", alpha=overlay_alpha, vmin=0.0, vmax=1.0)
+                ax.set_title(f"t={i}", fontsize=8)
+
+            fig.tight_layout(pad=0.2)
+            out_path = os.path.join(out_dir, f"{self.model_name.lower()}_{split}_batch{batch_idx:03d}_saliency.png")
+            fig.savefig(out_path, dpi=160)
+            plt.close(fig)
+            saved += 1
+
+        if saved == 0:
+            logging.warning("visualize_saliency(): no batches processed; nothing saved.")
+        return out_dir
 
     def save_model(self, index, best=0):
         if best:

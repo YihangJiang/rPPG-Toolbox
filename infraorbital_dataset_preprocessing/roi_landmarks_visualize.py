@@ -1,11 +1,11 @@
 # %%
 # %reload_ext autoreload
 # %autoreload 2
-%matplotlib inline
 
 import cv2
 import math
 import numpy as np
+# %%
 import matplotlib.pyplot as plt
 import os
 import mediapipe as mp

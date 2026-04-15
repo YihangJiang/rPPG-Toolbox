@@ -3,6 +3,7 @@
 # %autoreload 2
 import sys
 from pathlib import Path
+import torch
 
 
 # Add project root to Python path for imports (needed when running in Jupyter/IPython)
@@ -10,7 +11,6 @@ script_dir = Path(__file__).parent if '__file__' in globals() else Path.cwd() / 
 project_root = script_dir.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
-# %%
 
 # %%
 
@@ -18,7 +18,6 @@ from dataset import data_loader
 from config import get_config
 import types
 import numpy as np
-import torch
 import random
 from torch.utils.data import DataLoader
 from neural_methods import trainer
@@ -155,4 +154,23 @@ model_trainer = train(config, data_loader_dict)
 model_trainer.test(data_loader_dict)
 # %%
 model_trainer.analyze(data_loader_dict)
+# %%
+
+# Saliency map visualization (input-gradient)
+# Saves PNG grids with saliency overlays for a few test batches.
+try:
+    sal_dir = model_trainer.visualize_saliency(
+        data_loader_dict,
+        split="test",
+        out_dir=None,
+        max_batches=1,
+        max_frames=32,
+        overlay_alpha=0.45,
+    )
+    print(f"Saved saliency visualizations to: {sal_dir}")
+except Exception as e:
+    print(f"Saliency visualization skipped due to error: {e}")
+
+# %%
+import torch
 # %%
